@@ -51,7 +51,7 @@ Shader "Projector/Multiply" {
 				texS.a = 1.0-texS.a;
 
 				fixed4 texF = tex2Dproj (_FalloffTex, UNITY_PROJ_COORD(i.uvFalloff));
-				fixed4 res = lerp(fixed4(1,1,1,0), texS, texF.g);
+				fixed4 res = lerp(fixed4(1,1,1,0), texS, 0.5);
 
 				UNITY_APPLY_FOG_COLOR(i.fogCoord, res, fixed4(1,1,1,1));
 				return res;
