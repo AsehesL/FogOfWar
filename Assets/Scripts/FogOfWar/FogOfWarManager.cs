@@ -30,7 +30,9 @@ public class FogOfWarManager : MonoBehaviour {
 
     private bool m_IsInitialized;
 
-    private float m_CurrentTime;
+    private float m_CurrentTime = 1.0f;
+
+    //private float m_Alpha;
 
     void Awake()
     {
@@ -47,17 +49,38 @@ public class FogOfWarManager : MonoBehaviour {
         pj.orthographicSize = zSize / 2;
         pj.material = pjMat;
 
-        pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.GetMaskTexture(false));
+        //pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.texture);
     }
 
     void FixedUpdate()
     {
-        m_CurrentTime += Time.deltaTime;
-        if (m_CurrentTime > 1.0f)
+        if (m_CurrentTime >= 1.0f)
         {
-            m_CurrentTime = 0;
-            pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.GetMaskTexture(true));
+            if (m_Map.maskTexture.RefreshTexture())
+            {
+                pjMat.SetFloat("_Alpha", 0);
+                m_CurrentTime = 0;
+                pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.texture);
+            }
         }
+        else
+        {
+            m_CurrentTime += Time.deltaTime;
+            pjMat.SetFloat("_Alpha", m_CurrentTime);
+        }
+       // m_CurrentTime += Time.deltaTime;
+       // m_Alpha += Time.deltaTime*1.3f;
+       // if (m_CurrentTime > 1.0f)
+       // {
+       //     m_CurrentTime = 0;
+       //     m_Alpha = 0;
+       //     pjMat.SetFloat("_Alpha", m_Alpha);
+       //     pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.GetMaskTexture(true));
+       // }
+       //if(m_Alpha<1.0f)
+       // {
+       //     pjMat.SetFloat("_Alpha", m_Alpha);
+       // }
     }
 
     private bool Init()
