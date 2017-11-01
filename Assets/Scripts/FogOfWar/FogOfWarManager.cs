@@ -31,8 +31,10 @@ public class FogOfWarManager : MonoBehaviour {
     private bool m_IsInitialized;
 
     private float m_CurrentTime = 1.0f;
+    private float m_RefreshTime = 1.0f;
 
-    //private float m_Alpha;
+    private const float kDispearSpeed = 2f;
+    private const float kRefreshTextureSpeed = 3.0f;
 
     void Awake()
     {
@@ -48,39 +50,33 @@ public class FogOfWarManager : MonoBehaviour {
         pj.nearClipPlane = -100;
         pj.orthographicSize = zSize / 2;
         pj.material = pjMat;
-
-        //pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.texture);
+        
     }
 
     void FixedUpdate()
     {
         if (m_CurrentTime >= 1.0f)
         {
-            if (m_Map.maskTexture.RefreshTexture())
+            if (m_RefreshTime >= 1.0f)
             {
-                pjMat.SetFloat("_Alpha", 0);
-                m_CurrentTime = 0;
-                pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.texture);
+                m_RefreshTime = 0.0f;
+                if (m_Map.maskTexture.RefreshTexture())
+                {
+                    pjMat.SetFloat("_Alpha", 0);
+                    m_CurrentTime = 0;
+                    pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.texture);
+                }
+            }
+            else
+            {
+                m_RefreshTime += Time.deltaTime* kRefreshTextureSpeed;
             }
         }
         else
         {
-            m_CurrentTime += Time.deltaTime;
+            m_CurrentTime += Time.deltaTime* kDispearSpeed;
             pjMat.SetFloat("_Alpha", m_CurrentTime);
         }
-       // m_CurrentTime += Time.deltaTime;
-       // m_Alpha += Time.deltaTime*1.3f;
-       // if (m_CurrentTime > 1.0f)
-       // {
-       //     m_CurrentTime = 0;
-       //     m_Alpha = 0;
-       //     pjMat.SetFloat("_Alpha", m_Alpha);
-       //     pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.GetMaskTexture(true));
-       // }
-       //if(m_Alpha<1.0f)
-       // {
-       //     pjMat.SetFloat("_Alpha", m_Alpha);
-       // }
     }
 
     private bool Init()
