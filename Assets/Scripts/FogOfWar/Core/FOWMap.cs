@@ -28,6 +28,7 @@ namespace ASL.FogOfWar
 
         private Queue<FOWMapPos> m_Queue = new Queue<FOWMapPos>();
         private Queue<FOWMapPos> m_RayCastQueue = new Queue<FOWMapPos>();
+        private List<int> m_Arrives = new List<int>();
 
         private float[] m_SortAngle = new float[4];
 
@@ -78,189 +79,114 @@ namespace ASL.FogOfWar
             if (m_MapData[x, z] != 0)
                 return;
             m_Queue.Clear();
+            m_Arrives.Clear();
 
-            int xRange = Mathf.FloorToInt(radius/Mathf.FloorToInt(xSize/texWidth));
-            int zRange = Mathf.FloorToInt(radius / Mathf.FloorToInt(zSize / texHeight));
-
-            int left = xRange;
-            int right = xRange;
-            int top = zRange;
-            int down = zRange;
-            if (x >= 0 && x < xRange)
-            {
-                left = x;
-            }
-            if (x < texWidth && x >= texWidth - xRange)
-            {
-                right = texWidth - 1 - x;
-            }
-            if (z >= 0 && z < zRange)
-            {
-                down = z;
-            }
-            if (z < texHeight && z >= texHeight - zRange)
-            {
-                top = texHeight - 1 - z;
-            }
-            int centX = left;
-            int centY = down;
-
-            int[,] temp = new int[left + right + 1, top + down + 1];
-
-            m_Queue.Enqueue(new FOWMapPos(0, 0));
-            temp[centX, centY] = -1;
+            m_Queue.Enqueue(new FOWMapPos(x, z));
+            m_Arrives.Add(z*texWidth + x);
 
             while (m_Queue.Count > 0)
             {
                 var root = m_Queue.Dequeue();
-                if (m_MapData[x + root.x, z + root.y] != 0)
+                if (m_MapData[root.x, root.y] != 0)
                 {
-                    RayCast(root, centX, centY, left + right + 1, top + down + 1, deltaXSize, deltaZSize, temp);
+                    RayCast(root, x, z, texWidth, texHeight, deltaXSize, deltaZSize, radius);
                     continue;
                 }
-                if (centX + root.x - 1 >= 0)
-                {
-                    if (temp[centX + root.x - 1, centY + root.y] == 0)
-                    {
-                        m_Queue.Enqueue(new FOWMapPos(root.x - 1, root.y));
-                        temp[centX + root.x - 1, centY + root.y] = -1;
-                        m_MaskTexture.SetAsVisible(x + root.x - 1, z + root.y);
-                    }
-                }
-                if (centY + root.y - 1 >= 0)
-                {
-                    if (temp[centX + root.x, centY + root.y - 1] == 0)
-                    {
-                        m_Queue.Enqueue(new FOWMapPos(root.x, root.y - 1));
-                        temp[centX + root.x, centY + root.y - 1] = -1;
-                        m_MaskTexture.SetAsVisible(x + root.x, z + root.y - 1);
-                    }
-                }
-                if (centX + root.x + 1 < left + right + 1)
-                {
-                    if (temp[centX + root.x + 1, centY + root.y] == 0)
-                    {
-                        m_Queue.Enqueue(new FOWMapPos(root.x + 1, root.y));
-                        temp[centX + root.x + 1, centY + root.y] = -1;
-                        m_MaskTexture.SetAsVisible(x + root.x + 1, z + root.y);
-                    }
-                }
-                if (centY + root.y + 1 < top + down + 1)
-                {
-                    if (temp[centX + root.x, centY + root.y + 1] == 0)
-                    {
-                        m_Queue.Enqueue(new FOWMapPos(root.x, root.y + 1));
-                        temp[centX + root.x, centY + root.y + 1] = -1;
-                        m_MaskTexture.SetAsVisible(x + root.x, z + root.y + 1);
-                    }
-                }
+                SetAsVisible(root.x - 1, root.y, x, z, texWidth, texHeight, deltaXSize, deltaZSize, radius);
+                SetAsVisible(root.x, root.y - 1, x, z, texWidth, texHeight, deltaXSize, deltaZSize, radius);
+                SetAsVisible(root.x + 1, root.y, x, z, texWidth, texHeight, deltaXSize, deltaZSize, radius);
+                SetAsVisible(root.x, root.y + 1, x, z, texWidth, texHeight, deltaXSize, deltaZSize, radius);
+
             }
             
         }
 
-        private void RayCast(FOWMapPos pos, int centX, int centY, int w, int h, float deltaXSize, float deltaZSize, int[,] map)
+        private void SetAsVisible(int x, int z,int centX, int centZ, int texWidth, int texHeight, float deltaXSize, float deltaZSize, float radius)
         {
-            m_SortAngle[0] = Mathf.Atan2((pos.y * deltaZSize + deltaZSize / 2), (pos.x * deltaXSize - deltaXSize / 2)) * Mathf.Rad2Deg;
-            m_SortAngle[1] = Mathf.Atan2((pos.y * deltaZSize - deltaZSize / 2), (pos.x * deltaXSize - deltaXSize / 2)) * Mathf.Rad2Deg;
-            m_SortAngle[2] = Mathf.Atan2((pos.y * deltaZSize + deltaZSize / 2), (pos.x * deltaXSize + deltaXSize / 2)) * Mathf.Rad2Deg;
-            m_SortAngle[3] = Mathf.Atan2((pos.y * deltaZSize - deltaZSize / 2), (pos.x * deltaXSize + deltaXSize / 2)) * Mathf.Rad2Deg;
-            float cAngle = Mathf.Atan2((pos.y * deltaZSize), (pos.x * deltaXSize)) * Mathf.Rad2Deg;
+            if (x < 0 || z < 0 || x >= texWidth || z >= texHeight)
+                return;
+            float r = Mathf.Sqrt((x - centX)*(x - centX)*deltaXSize*deltaXSize + (z - centZ)*(z - centZ)*deltaZSize*deltaZSize);
+            if (r > radius)
+                return;
+            int index = z * texWidth + x;
+            if (m_Arrives.Contains(index))
+                return;
+            m_Arrives.Add(index);
+            m_Queue.Enqueue(new FOWMapPos(x, z));
+            m_MaskTexture.SetAsVisible(x, z);
+        }
+
+        private void RayCast(FOWMapPos pos, int centX, int centZ, int texWidth, int texHeight, float deltaXSize,
+            float deltaZSize, float radius)
+        {
+            int x = pos.x - centX;
+            int z = pos.y - centZ;
+            m_SortAngle[0] = Mathf.Atan2((z*deltaZSize + deltaZSize/2), (x*deltaXSize - deltaXSize/2))*Mathf.Rad2Deg;
+            m_SortAngle[1] = Mathf.Atan2((z*deltaZSize - deltaZSize/2), (x*deltaXSize - deltaXSize/2))*Mathf.Rad2Deg;
+            m_SortAngle[2] = Mathf.Atan2((z*deltaZSize + deltaZSize/2), (x*deltaXSize + deltaXSize/2))*Mathf.Rad2Deg;
+            m_SortAngle[3] = Mathf.Atan2((z*deltaZSize - deltaZSize/2), (x*deltaXSize + deltaXSize/2))*Mathf.Rad2Deg;
+            float curAngle = Mathf.Atan2((z*deltaZSize), (x*deltaXSize))*Mathf.Rad2Deg;
             SortAngle();
 
             m_RayCastQueue.Clear();
             m_RayCastQueue.Enqueue(pos);
-            map[centX + pos.x, centY + pos.y] = 1;
+            int index = pos.y*texWidth + pos.x;
+            m_Arrives.Add(index);
             while (m_RayCastQueue.Count > 0)
             {
                 FOWMapPos root = m_RayCastQueue.Dequeue();
 
-                if (centX + root.x - 1 >= 0 && (cAngle >= 90 || cAngle < -90))
+                if (root.x - 1 >= 0 && (curAngle >= 90 || curAngle < -90))
                 {
-                    if (map[centX + root.x - 1, centY + root.y] == 0)
-                    {
-                        if (AddLegalPos(root.x - 1, root.y, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x - 1, root.y));
-                            map[centX + root.x - 1, centY + root.y] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x - 1, root.y, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize, radius);
                 }
-                if (centX + root.x - 1 >= 0 && centY + root.y - 1 >= 0 && cAngle <= -90 && cAngle >= -180)
+                if (root.x - 1 >= 0 && root.y - 1 >= 0 && curAngle <= -90 && curAngle >= -180)
                 {
-                    if (map[centX + root.x - 1, centY + root.y - 1] == 0)
-                    {
-                        if (AddLegalPos(root.x - 1, root.y - 1, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x - 1, root.y - 1));
-                            map[centX + root.x - 1, centY + root.y - 1] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x - 1, root.y - 1, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize,
+                        radius);
                 }
-                if (centY + root.y - 1 >= 0 && cAngle <= 0 && cAngle >= -180)
+                if (root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -180)
                 {
-                    if (map[centX + root.x, centY + root.y - 1] == 0)
-                    {
-                        if (AddLegalPos(root.x, root.y - 1, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x, root.y - 1));
-                            map[centX + root.x, centY + root.y - 1] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x, root.y - 1, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize, radius);
                 }
-                if (centX + root.x + 1 < w && centY + root.y - 1 >= 0 && cAngle <= 0 && cAngle >= -90)
+                if (root.x + 1 < texWidth && root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -90)
                 {
-                    if (map[centX + root.x + 1, centY + root.y - 1] == 0)
-                    {
-                        if (AddLegalPos(root.x + 1, root.y - 1, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x + 1, root.y - 1));
-                            map[centX + root.x + 1, centY + root.y - 1] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x + 1, root.y - 1, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize,
+                        radius);
                 }
-                if (centX + root.x + 1 < w && cAngle >= -90 && cAngle <= 90)
+                if (root.x + 1 < texWidth && curAngle >= -90 && curAngle <= 90)
                 {
-                    if (map[centX + root.x + 1, centY + root.y] == 0)
-                    {
-                        if (AddLegalPos(root.x + 1, root.y, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x + 1, root.y));
-                            map[centX + root.x + 1, centY + root.y] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x + 1, root.y, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize, radius);
                 }
-                if (centX + root.x + 1 < w && centY + root.y + 1 < h && cAngle >= 0 && cAngle <= 90)
+                if (root.x + 1 < texWidth && root.y + 1 < texHeight && curAngle >= 0 && curAngle <= 90)
                 {
-                    if (map[centX + root.x + 1, centY + root.y + 1] == 0)
-                    {
-                        if (AddLegalPos(root.x + 1, root.y + 1, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x + 1, root.y + 1));
-                            map[centX + root.x + 1, centY + root.y + 1] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x + 1, root.y + 1, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize,
+                        radius);
                 }
-                if (centY + root.y + 1 < h && cAngle >= 0 && cAngle <= 180)
+                if (root.y + 1 < texHeight && curAngle >= 0 && curAngle <= 180)
                 {
-                    if (map[centX + root.x, centY + root.y + 1] == 0)
-                    {
-                        if (AddLegalPos(root.x, root.y + 1, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x, root.y + 1));
-                            map[centX + root.x, centY + root.y + 1] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x, root.y + 1, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize, radius);
                 }
-                if (centX + root.x - 1 >= 0 && centY + root.y + 1 < h && cAngle >= 90 && cAngle <= 180)
+                if (root.x - 1 >= 0 && root.y + 1 < texHeight && curAngle >= 90 && curAngle <= 180)
                 {
-                    if (map[centX + root.x - 1, centY + root.y + 1] == 0)
-                    {
-                        if (AddLegalPos(root.x - 1, root.y + 1, deltaXSize, deltaZSize))
-                        {
-                            m_RayCastQueue.Enqueue(new FOWMapPos(root.x - 1, root.y + 1));
-                            map[centX + root.x - 1, centY + root.y + 1] = 1;
-                        }
-                    }
+                    SetAsRaycast(root.x - 1, root.y + 1, centX, centZ, texWidth, texHeight, deltaXSize, deltaZSize,
+                        radius);
+                }
+            }
+        }
+
+        private void SetAsRaycast(int x, int z, int centX, int centZ, int texWidth, int texHeight, float deltaXSize, float deltaZSize, float radius)
+        {
+            int index = z * texWidth + x;
+            float r = Mathf.Sqrt((x - centX) * (x - centX) * deltaXSize * deltaXSize + (z - centZ) * (z - centZ) * deltaZSize * deltaZSize);
+            if (r > radius)
+                return;
+            if (m_Arrives.Contains(index) == false)
+            {
+                if (AddLegalPos(x - centX, z - centZ, deltaXSize, deltaZSize))
+                {
+                    m_RayCastQueue.Enqueue(new FOWMapPos(x, z));
+                    m_Arrives.Add(index);
                 }
             }
         }

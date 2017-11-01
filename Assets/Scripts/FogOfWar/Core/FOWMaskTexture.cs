@@ -10,6 +10,8 @@ namespace ASL.FogOfWar
 
         private byte[,] m_MaskCache;
 
+        private bool m_IsUpdated;
+
         public FOWMaskTexture(int width, int height)
         {
             m_MaskTexture = new Texture2D(width, height);
@@ -27,10 +29,13 @@ namespace ASL.FogOfWar
         public void SetAsVisible(int x, int y)
         {
             m_MaskCache[x, y] = 1;
+            m_IsUpdated = true;
         }
 
         public Texture2D GetMaskTexture(bool refresh)
         {
+            if (!m_IsUpdated)
+                return m_MaskTexture;
             if (!refresh)
                 return m_MaskTexture;
             else
@@ -39,11 +44,17 @@ namespace ASL.FogOfWar
                 {
                     for (int j = 0; j < m_MaskTexture.height; j++)
                     {
-                        m_MaskTexture.SetPixel(i, j, m_MaskCache[i, j] == 1 ? Color.white : Color.black);
+                        bool isVisible = m_MaskCache[i, j] == 1;
+                        Color origin = m_MaskTexture.GetPixel(i, j);
+                        origin.r = Mathf.Clamp01(origin.r + origin.g);
+                        origin.b = origin.g;
+                        origin.g = isVisible ? 1 : 0;
+                        m_MaskTexture.SetPixel(i, j, origin);
                         m_MaskCache[i, j] = 0;
                     }
                 }
                 m_MaskTexture.Apply();
+                m_IsUpdated = false;
                 return m_MaskTexture;
             }
         }
