@@ -6,7 +6,7 @@ namespace ASL.FogOfWar
     internal class FOWMaskTexture
     {
 
-        public Texture texture { get { return m_MaskTexture; } }
+        public Texture2D texture { get { return m_MaskTexture; } }
 
         private Texture2D m_MaskTexture;
 
@@ -47,6 +47,7 @@ namespace ASL.FogOfWar
             if (m_MaskTexture == null)
             {
                 m_MaskTexture = new Texture2D(m_Width, m_Height);
+                m_MaskTexture.wrapMode = TextureWrapMode.Clamp;
                 isNew = true;
             }
             for (int i = 0; i < m_MaskTexture.width; i++)

@@ -22,16 +22,21 @@ public class FogOfWarManager : MonoBehaviour {
     public int texWidth;
     public int texHeight;
 
-    public Material pjMat;
+    public Vector3 centerPosition;
 
     public float heightRange;
 
+    public Shader effectShader;
+
     private FOWMap m_Map;
+    private FOWRenderer m_Renderer;
 
     private bool m_IsInitialized;
 
     private float m_CurrentTime = 1.0f;
     private float m_RefreshTime = 1.0f;
+
+    private Camera m_Camera;
 
     private const float kDispearSpeed = 2f;
     private const float kRefreshTextureSpeed = 3.0f;
@@ -39,17 +44,6 @@ public class FogOfWarManager : MonoBehaviour {
     void Awake()
     {
         m_IsInitialized = Init();
-
-
-        Projector pj = new GameObject("Pj").AddComponent<Projector>();
-        pj.transform.rotation = Quaternion.Euler(90, 0, 0);
-        pj.transform.position = transform.position;
-        pj.aspectRatio = xSize / zSize;
-        pj.orthographic = true;
-        pj.farClipPlane = 100;
-        pj.nearClipPlane = -100;
-        pj.orthographicSize = zSize / 2;
-        pj.material = pjMat;
         
     }
 
@@ -62,9 +56,9 @@ public class FogOfWarManager : MonoBehaviour {
                 m_RefreshTime = 0.0f;
                 if (m_Map.maskTexture.RefreshTexture())
                 {
-                    pjMat.SetFloat("_Alpha", 0);
+                    m_Renderer.SetFogFade(0);
                     m_CurrentTime = 0;
-                    pjMat.SetTexture("_ShadowTex", m_Map.maskTexture.texture);
+                    m_Renderer.SetFogTexture(m_Map.maskTexture.texture);
                 }
             }
             else
@@ -75,7 +69,7 @@ public class FogOfWarManager : MonoBehaviour {
         else
         {
             m_CurrentTime += Time.deltaTime* kDispearSpeed;
-            pjMat.SetFloat("_Alpha", m_CurrentTime);
+            m_Renderer.SetFogFade(m_CurrentTime);
         }
     }
 
@@ -83,7 +77,13 @@ public class FogOfWarManager : MonoBehaviour {
     {
         if (xSize <= 0 || zSize <= 0 || texWidth <= 0 || texHeight <= 0)
             return false;
-        m_Map = new FOWMap(transform.position, xSize, zSize, texWidth, texHeight, heightRange);
+        if (effectShader == null || !effectShader.isSupported)
+            return false;
+        m_Camera = gameObject.GetComponent<Camera>();
+        if (m_Camera == null)
+            return false;
+        m_Renderer = new FOWRenderer(effectShader, centerPosition, xSize, zSize);
+        m_Map = new FOWMap(centerPosition, xSize, zSize, texWidth, texHeight, heightRange);
         return true;
     }
 
@@ -95,18 +95,28 @@ public class FogOfWarManager : MonoBehaviour {
             return;
         float deltaXSize = Instance.xSize / Instance.texWidth;
         float deltaZSize = Instance.zSize / Instance.texHeight;
-        Vector3 originPos = Instance.transform.position - new Vector3(Instance.xSize / 2, 0, Instance.zSize / 2);
+        Vector3 originPos = Instance.centerPosition - new Vector3(Instance.xSize / 2, 0, Instance.zSize / 2);
         int x = Mathf.FloorToInt((explorer.transform.position.x - originPos.x) / deltaXSize);
         int z = Mathf.FloorToInt((explorer.transform.position.z - originPos.z) / deltaZSize);
         if (explorer.IsPosChange(x, z))
         {
-            Instance.m_Map.OpenFOV(explorer.transform.position, Instance.transform.position, Instance.xSize,
+            Instance.m_Map.OpenFOV(explorer.transform.position, Instance.centerPosition, Instance.xSize,
                 Instance.zSize, Instance.texWidth, Instance.texHeight, explorer.radius);
+        }
+    }
+
+    void OnRenderImage(RenderTexture src, RenderTexture dst)
+    {
+        if (!m_IsInitialized)
+            Graphics.Blit(src, dst);
+        else
+        {
+            m_Renderer.RenderFogOfWar(m_Camera.cameraToWorldMatrix, src, dst);
         }
     }
 
     void OnDrawGizmosSelected()
     {
-        FOWUtils.DrawFogOfWarGizmos(transform.position, xSize, zSize, texWidth, texHeight, heightRange);
+        FOWUtils.DrawFogOfWarGizmos(centerPosition, xSize, zSize, texWidth, texHeight, heightRange);
     }
 }
