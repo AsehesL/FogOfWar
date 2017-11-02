@@ -50,8 +50,8 @@ public class FogOfWarEffect : MonoBehaviour {
 
     private Camera m_Camera;
 
-    private const float kDispearSpeed = 2f;
-    private const float kRefreshTextureSpeed = 3.0f;
+    private const float kDispearSpeed = 3f;
+    private const float kRefreshTextureSpeed = 4.0f;
 
     private Vector3 m_BeginPos;
 
@@ -79,11 +79,12 @@ public class FogOfWarEffect : MonoBehaviour {
             if (m_RefreshTime >= 1.0f)
             {
                 m_RefreshTime = 0.0f;
-                if (m_Map.maskTexture.RefreshTexture())
+                if (m_Map.RefreshTexture())
                 {
+                    
                     m_Renderer.SetFogFade(0);
                     m_CurrentTime = 0;
-                    m_Renderer.SetFogTexture(m_Map.maskTexture.texture);
+                    m_Renderer.SetFogTexture(m_Map.GetTexture());
                 }
             }
             else
