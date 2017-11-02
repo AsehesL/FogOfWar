@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 探索者
+/// </summary>
 public class FogOfWarExplorer : MonoBehaviour
 {
     public float radius;
@@ -10,17 +13,24 @@ public class FogOfWarExplorer : MonoBehaviour
 
     private int m_OriginMapPosX;
     private int m_OriginMapPosZ;
+
+    private bool m_IsInitialized;
 	
 	void Update () {
 	    if (m_OriginPosition != transform.position)
 	    {
 	        m_OriginPosition = transform.position;
-	        FogOfWarManager.RefreshExplorerPosition(this);
+	        FogOfWarEffect.RefreshExplorerPosition(this);
 	    }
 	}
 
     public bool IsPosChange(int posX, int posZ)
     {
+        if (!m_IsInitialized)
+        {
+            m_IsInitialized = true;
+            return true;
+        }
         return m_OriginMapPosX != posX || m_OriginMapPosZ != posZ;
     }
 }

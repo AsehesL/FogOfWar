@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FogOfWarSpy : MonoBehaviour
+/// <summary>
+/// 潜行者
+/// </summary>
+public class FogOfWarStalker : MonoBehaviour
 {
 
     private float m_RequestTime;
@@ -22,7 +25,7 @@ public class FogOfWarSpy : MonoBehaviour
         if (m_RequestTime > 1.0f)
         {
             m_RequestTime = 0;
-            bool visible = FogOfWarManager.IsVisibleInMap(transform.position);
+            bool visible = FogOfWarEffect.IsVisibleInMap(transform.position);
             SetVisible(visible);
         }
     }
