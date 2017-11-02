@@ -101,6 +101,29 @@ namespace ASL.FogOfWar
             
         }
 
+        public bool IsVisibleInMap(int x, int z)
+        {
+            return m_MaskTexture.IsVisible(x, z);
+        }
+
+        public void Release()
+        {
+            if (m_MaskTexture != null)
+                m_MaskTexture.Release();
+            m_MaskTexture = null;
+            m_MapData = null;
+            m_SortAngle = null;
+            if (m_Queue != null)
+                m_Queue.Clear();
+            if (m_RayCastQueue != null)
+                m_RayCastQueue.Clear();
+            if (m_Arrives != null)
+                m_Arrives.Clear();
+            m_Queue = null;
+            m_RayCastQueue = null;
+            m_Arrives = null;
+        }
+
         private void SetAsVisible(int x, int z,int centX, int centZ, int texWidth, int texHeight, float deltaXSize, float deltaZSize, float radius)
         {
             if (x < 0 || z < 0 || x >= texWidth || z >= texHeight)

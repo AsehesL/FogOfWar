@@ -11,9 +11,10 @@ namespace ASL.FogOfWar
 
         private Matrix4x4 m_WorldToProjector;
 
-        public FOWRenderer(Shader effectShader, Vector3 position, float xSize, float zSize)
+        public FOWRenderer(Shader effectShader, Vector3 position, float xSize, float zSize, float blurOffset)
         {
             m_EffectMaterial = new Material(effectShader);
+            m_EffectMaterial.SetFloat("_BlurOffset", blurOffset);
             Matrix4x4 worldToLocal = Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
             Matrix4x4 proj = default(Matrix4x4);
 

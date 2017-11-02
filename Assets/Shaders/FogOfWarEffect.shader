@@ -5,6 +5,7 @@
 		_MainTex ("Texture", 2D) = "white" {}
 		_FogTex ("FogTex", 2D) = "black" {}
 		_MixValue("MixValue", float) = 0
+		_BlurOffset("BlurOffset", float) = 0
 	}
 	SubShader
 	{
@@ -44,7 +45,8 @@
 
 			sampler2D _FogTex;
 
-			float _MixValue;
+			half _MixValue;
+			half _BlurOffset;
 
 			float4x4 internal_CameraToProjector;
 
@@ -60,14 +62,20 @@
 				pos = mul(unity_CameraInvProjection, pos);
 				pos = mul(internal_CameraToProjector, pos);
 
-				//pos.xy /= pos.w;
+				pos.xy /= pos.w;
 
-				fixed4 tex = tex2Dproj(_FogTex, UNITY_PROJ_COORD(pos));
-				//fixed4 tex = tex2D(_FogTex, pos.xy);
+				//fixed4 tex = tex2Dproj(_FogTex, UNITY_PROJ_COORD(pos));
+				fixed3 tex = tex2D(_FogTex, pos.xy).rgb*0.5;
+				tex.rgb += tex2D(_FogTex, pos.xy + half2(_BlurOffset, 0)).rgb*0.125;
+				tex.rgb += tex2D(_FogTex, pos.xy - half2(_BlurOffset, 0)).rgb*0.125;
+				tex.rgb += tex2D(_FogTex, pos.xy + half2(0, _BlurOffset)).rgb*0.125;
+				tex.rgb += tex2D(_FogTex, pos.xy - half2(0, _BlurOffset)).rgb*0.125;
+
+				float2 atten = saturate((0.5 - abs(pos.xy - 0.5)) / (1 - 0.9));
 
 				fixed4 col = fixed4(tex.r, tex.r, tex.r, 1)*0.5;
 				fixed visual = lerp(tex.b, tex.g, _MixValue);
-				col.rgb = lerp(col.rgb, fixed3(1, 1, 1), visual);
+				col.rgb = lerp(col.rgb, fixed3(1, 1, 1), visual)*atten.x*atten.y;
 
 				c.rgb *= col.rgb;
 				return c;

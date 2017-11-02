@@ -28,6 +28,8 @@ public class FogOfWarManager : MonoBehaviour {
 
     public Shader effectShader;
 
+    public float blurOffset;
+
     private FOWMap m_Map;
     private FOWRenderer m_Renderer;
 
@@ -45,6 +47,17 @@ public class FogOfWarManager : MonoBehaviour {
     {
         m_IsInitialized = Init();
         
+    }
+
+    void OnDestroy()
+    {
+        if (m_Renderer != null)
+            m_Renderer.Release();
+        if (m_Map != null)
+            m_Map.Release();
+        m_Renderer = null;
+        m_Map = null;
+        instance = null;
     }
 
     void FixedUpdate()
@@ -82,7 +95,7 @@ public class FogOfWarManager : MonoBehaviour {
         m_Camera = gameObject.GetComponent<Camera>();
         if (m_Camera == null)
             return false;
-        m_Renderer = new FOWRenderer(effectShader, centerPosition, xSize, zSize);
+        m_Renderer = new FOWRenderer(effectShader, centerPosition, xSize, zSize, blurOffset);
         m_Map = new FOWMap(centerPosition, xSize, zSize, texWidth, texHeight, heightRange);
         return true;
     }
@@ -104,6 +117,23 @@ public class FogOfWarManager : MonoBehaviour {
                 Instance.zSize, Instance.texWidth, Instance.texHeight, explorer.radius);
         }
     }
+
+    public static bool IsVisibleInMap(Vector3 position)
+    {
+        if (!Instance)
+            return true;
+        if (!Instance.m_IsInitialized)
+            return true;
+        float deltaXSize = Instance.xSize/Instance.texWidth;
+        float deltaZSize = Instance.zSize/Instance.texHeight;
+        Vector3 originPos = Instance.centerPosition - new Vector3(Instance.xSize/2, 0, Instance.zSize/2);
+        int x = Mathf.FloorToInt((position.x - originPos.x)/deltaXSize);
+        int z = Mathf.FloorToInt((position.z - originPos.z)/deltaZSize);
+
+        return Instance.m_Map.IsVisibleInMap(x, z);
+
+    }
+
 
     void OnRenderImage(RenderTexture src, RenderTexture dst)
     {

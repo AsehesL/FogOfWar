@@ -10,10 +10,6 @@ public class FogOfWarExplorer : MonoBehaviour
 
     private int m_OriginMapPosX;
     private int m_OriginMapPosZ;
-
-	void Start () {
-		
-	}
 	
 	void Update () {
 	    if (m_OriginPosition != transform.position)
