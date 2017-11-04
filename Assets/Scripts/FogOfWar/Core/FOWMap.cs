@@ -5,37 +5,19 @@ using System.Threading;
 
 namespace ASL.FogOfWar
 {
-    internal struct FOWMapPos
-    {
-        public int x;
-        public int y;
-
-        public FOWMapPos(int x, int y)
-        {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
-    internal struct FOWFieldData
-    {
-        public Vector3 position;
-        public float radius;
-
-        public FOWFieldData(Vector3 position, float radius)
-        {
-            this.position = position;
-            this.radius = radius;
-        }
-    }
-
+    /// <summary>
+    /// 战争迷雾地图类
+    /// </summary>
     internal class FOWMap
     {
-
-        //public FOWMaskTexture maskTexture { get { return m_MaskTexture; } }
-
+        /// <summary>
+        /// 地图数据（1表示障碍物）
+        /// </summary>
         private byte[,] m_MapData;
 
+        /// <summary>
+        /// 迷雾纹理
+        /// </summary>
         private FOWMaskTexture m_MaskTexture;
 
         private Queue<FOWMapPos> m_Queue = new Queue<FOWMapPos>();
@@ -44,12 +26,10 @@ namespace ASL.FogOfWar
 
         private float[] m_SortAngle = new float[4];
 
-        private WaitCallback m_WaitCallBack;
-
-        //private Thread m_Thread;
-        //private object m_Lock;
-
-        //private Queue<FOWFieldData> m_OpenFOVList = new Queue<FOWFieldData>();
+        /// <summary>
+        /// 在线程池中计算FOV
+        /// </summary>
+        private WaitCallback m_FOVCalculator;
 
         private Vector3 m_BeginPosition;
         
@@ -60,9 +40,7 @@ namespace ASL.FogOfWar
 
         public FOWMap(Vector3 begionPosition, float xSize, float zSize, int texWidth, int texHeight, float heightRange)
         {
-            //m_Lock = new object();
-            //m_Thread = new Thread(FOVAction);
-            m_WaitCallBack = new WaitCallback(this.FOVAction2);
+            m_FOVCalculator = new WaitCallback(this.CalculateFOV);
 
             m_MapData = new byte[texWidth, texHeight];
             m_MaskTexture = new FOWMaskTexture(texWidth, texHeight);
@@ -73,9 +51,19 @@ namespace ASL.FogOfWar
             m_TexWidth = texWidth;
             m_TexHdight = texHeight;
 
-            for (int i = 0; i < texWidth; i++)
+            GenerateMapData(heightRange);
+
+        }
+
+        /// <summary>
+        /// 生成地图数据
+        /// </summary>
+        /// <param name="heightRange">高度范围</param>
+        private void GenerateMapData(float heightRange)
+        {
+            for (int i = 0; i < m_TexWidth; i++)
             {
-                for (int j = 0; j < texHeight; j++)
+                for (int j = 0; j < m_TexHdight; j++)
                 {
                     float x = m_BeginPosition.x + i * m_DeltaX + m_DeltaX / 2;
                     float y = m_BeginPosition.y + j * m_DeltaZ + m_DeltaZ / 2;
@@ -90,72 +78,48 @@ namespace ASL.FogOfWar
                     }
                 }
             }
-
-            //m_Thread.Start();
         }
 
-        public bool RefreshTexture()
+        /// <summary>
+        /// 刷新战争迷雾纹理，成功则返回true
+        /// </summary>
+        /// <returns></returns>
+        public bool RefreshFOWTexture()
         {
             return m_MaskTexture.RefreshTexture();
         }
 
-        public Texture2D GetTexture()
+        /// <summary>
+        /// 获得战争迷雾纹理
+        /// </summary>
+        /// <returns></returns>
+        public Texture2D GetFOWTexture()
         {
             return m_MaskTexture.texture;
         }
 
-        public void OpenFOV(Vector3 worldPosition, float radius)
+        /// <summary>
+        /// 根据视野数据设置可见
+        /// </summary>
+        /// <param name="fieldData">视野数据</param>
+        public void SetVisible(FOWFieldData fieldData)
         {
-            ThreadPool.QueueUserWorkItem(m_WaitCallBack, new FOWFieldData(worldPosition, radius));
-            //lock (m_Lock)
-            //{
-            //    m_OpenFOVList.Enqueue(new FOWFieldData(worldPosition, radius));
-            //}
-
-
-            //var dt = m_OpenFOVList.Dequeue();
-            //Vector3 worldPosition = dt.position;
-            //float radius = dt.radius;
-            //int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x) / m_DeltaX);
-            //int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z) / m_DeltaZ);
-
-            //if (x < 0 || x >= m_TexWidth)
-            //    return;
-            //if (z < 0 || z >= m_TexHdight)
-            //    return;
-            //if (m_MapData[x, z] != 0)
-            //    return;
-            //m_Queue.Clear();
-            //m_Arrives.Clear();
-
-            //m_Queue.Enqueue(new FOWMapPos(x, z));
-            //m_Arrives.Add(z * m_TexWidth + x);
-
-            //while (m_Queue.Count > 0)
-            //{
-            //    var root = m_Queue.Dequeue();
-            //    if (m_MapData[root.x, root.y] != 0)
-            //    {
-            //        RayCast(root, x, z, radius);
-            //        continue;
-            //    }
-            //    SetAsVisible(root.x - 1, root.y, x, z, radius);
-            //    SetAsVisible(root.x, root.y - 1, x, z, radius);
-            //    SetAsVisible(root.x + 1, root.y, x, z, radius);
-            //    SetAsVisible(root.x, root.y + 1, x, z, radius);
-            //}
+            ThreadPool.QueueUserWorkItem(m_FOVCalculator, fieldData);
         }
 
+        /// <summary>
+        /// 指定坐标是否在地图中可见
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="z"></param>
+        /// <returns></returns>
         public bool IsVisibleInMap(int x, int z)
         {
             return m_MaskTexture.IsVisible(x, z);
         }
-
+        
         public void Release()
         {
-            //if (m_Thread != null)
-            //    m_Thread.Abort();
-            //m_Thread = null;
             if (m_MaskTexture != null)
                 m_MaskTexture.Release();
             m_MaskTexture = null;
@@ -167,16 +131,17 @@ namespace ASL.FogOfWar
                 m_RayCastQueue.Clear();
             if (m_Arrives != null)
                 m_Arrives.Clear();
-            //if (m_OpenFOVList != null)
-            //    m_OpenFOVList.Clear();
             m_Queue = null;
             m_RayCastQueue = null;
             m_Arrives = null;
-            //m_OpenFOVList = null;
-            //m_Lock = null;
+            m_FOVCalculator = null;
         }
 
-        private void FOVAction2(object state)
+        /// <summary>
+        /// 在子线程计算视野
+        /// </summary>
+        /// <param name="state">参数（视野数据）</param>
+        private void CalculateFOV(object state)
         {
             var dt = (FOWFieldData)state;
             Vector3 worldPosition = dt.position;
@@ -205,76 +170,21 @@ namespace ASL.FogOfWar
                     RayCast(root, x, z, radius);
                     continue;
                 }
-                SetAsVisible(root.x - 1, root.y, x, z, radius);
-                SetAsVisible(root.x, root.y - 1, x, z, radius);
-                SetAsVisible(root.x + 1, root.y, x, z, radius);
-                SetAsVisible(root.x, root.y + 1, x, z, radius);
+                SetVisibleAtPosition(root.x - 1, root.y, x, z, radius);
+                SetVisibleAtPosition(root.x, root.y - 1, x, z, radius);
+                SetVisibleAtPosition(root.x + 1, root.y, x, z, radius);
+                SetVisibleAtPosition(root.x, root.y + 1, x, z, radius);
             }
         }
 
-        private void FOVAction()
-        {
-            while (true)
-            {
-                //lock (m_Lock)
-                {
-                    //if (m_OpenFOVList != null && m_OpenFOVList.Count > 0)
-                    {
-                        //while(m_OpenFOVList.Count>0)
-                        {
-                            //var dt = m_OpenFOVList.Dequeue();
-                            //Vector3 worldPosition = dt.position;
-                            //float radius = dt.radius;
-                            //int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x) / m_DeltaX);
-                            //int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z) / m_DeltaZ);
-
-                            //if (x < 0 || x >= m_TexWidth)
-                            //    continue;
-                            //if (z < 0 || z >= m_TexHdight)
-                            //    continue;
-                            //if (m_MapData[x, z] != 0)
-                            //    continue;
-                            //m_Queue.Clear();
-                            //m_Arrives.Clear();
-
-                            //m_Queue.Enqueue(new FOWMapPos(x, z));
-                            //m_Arrives.Add(z * m_TexWidth + x);
-
-                            //while (m_Queue.Count > 0)
-                            //{
-                            //    var root = m_Queue.Dequeue();
-                            //    if (m_MapData[root.x, root.y] != 0)
-                            //    {
-                            //        RayCast(root, x, z, radius);
-                            //        continue;
-                            //    }
-                            //    SetAsVisible(root.x - 1, root.y, x, z, radius);
-                            //    SetAsVisible(root.x, root.y - 1, x, z, radius);
-                            //    SetAsVisible(root.x + 1, root.y, x, z, radius);
-                            //    SetAsVisible(root.x, root.y + 1, x, z, radius);
-                            //}
-                        }
-                    }
-                }
-                Thread.Sleep(100);
-            }
-        }
-
-        private void SetAsVisible(int x, int z, int centX, int centZ, float radius)
-        {
-            if (x < 0 || z < 0 || x >= m_TexWidth || z >= m_TexHdight)
-                return;
-            float r = Mathf.Sqrt((x - centX)*(x - centX)* m_DeltaX * m_DeltaX + (z - centZ)*(z - centZ)* m_DeltaZ * m_DeltaZ);
-            if (r > radius)
-                return;
-            int index = z * m_TexWidth + x;
-            if (m_Arrives.Contains(index))
-                return;
-            m_Arrives.Add(index);
-            m_Queue.Enqueue(new FOWMapPos(x, z));
-            m_MaskTexture.SetAsVisible(x, z);
-        }
-
+        /// <summary>
+        /// 射线检测，将障碍物后全部设为不可见
+        /// TODO:待优化，实际上不必全部设置
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="centX"></param>
+        /// <param name="centZ"></param>
+        /// <param name="radius"></param>
         private void RayCast(FOWMapPos pos, int centX, int centZ, float radius)
         {
             int x = pos.x - centX;
@@ -296,40 +206,71 @@ namespace ASL.FogOfWar
 
                 if (root.x - 1 >= 0 && (curAngle >= 90 || curAngle < -90))
                 {
-                    SetAsRaycast(root.x - 1, root.y, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x - 1, root.y, centX, centZ, radius);
                 }
                 if (root.x - 1 >= 0 && root.y - 1 >= 0 && curAngle <= -90 && curAngle >= -180)
                 {
-                    SetAsRaycast(root.x - 1, root.y - 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x - 1, root.y - 1, centX, centZ, radius);
                 }
                 if (root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -180)
                 {
-                    SetAsRaycast(root.x, root.y - 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x, root.y - 1, centX, centZ, radius);
                 }
                 if (root.x + 1 < m_TexWidth && root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -90)
                 {
-                    SetAsRaycast(root.x + 1, root.y - 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x + 1, root.y - 1, centX, centZ, radius);
                 }
                 if (root.x + 1 < m_TexWidth && curAngle >= -90 && curAngle <= 90)
                 {
-                    SetAsRaycast(root.x + 1, root.y, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x + 1, root.y, centX, centZ, radius);
                 }
                 if (root.x + 1 < m_TexWidth && root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 90)
                 {
-                    SetAsRaycast(root.x + 1, root.y + 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x + 1, root.y + 1, centX, centZ, radius);
                 }
                 if (root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 180)
                 {
-                    SetAsRaycast(root.x, root.y + 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x, root.y + 1, centX, centZ, radius);
                 }
                 if (root.x - 1 >= 0 && root.y + 1 < m_TexHdight && curAngle >= 90 && curAngle <= 180)
                 {
-                    SetAsRaycast(root.x - 1, root.y + 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x - 1, root.y + 1, centX, centZ, radius);
                 }
             }
         }
 
-        private void SetAsRaycast(int x, int z, int centX, int centZ, float radius)
+        /// <summary>
+        /// 将指定坐标点设置为可见
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="z"></param>
+        /// <param name="centX"></param>
+        /// <param name="centZ"></param>
+        /// <param name="radius"></param>
+        private void SetVisibleAtPosition(int x, int z, int centX, int centZ, float radius)
+        {
+            if (x < 0 || z < 0 || x >= m_TexWidth || z >= m_TexHdight)
+                return;
+            float r = Mathf.Sqrt((x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ);
+            if (r > radius)
+                return;
+            int index = z * m_TexWidth + x;
+            if (m_Arrives.Contains(index))
+                return;
+            m_Arrives.Add(index);
+            m_Queue.Enqueue(new FOWMapPos(x, z));
+            m_MaskTexture.SetAsVisible(x, z);
+        }
+
+        /// <summary>
+        /// 将指定坐标点设置为不可见
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="z"></param>
+        /// <param name="centX"></param>
+        /// <param name="centZ"></param>
+        /// <param name="radius"></param>
+        private void SetInvisibleAtPosition(int x, int z, int centX, int centZ, float radius)
         {
             int index = z * m_TexWidth + x;
             float r = Mathf.Sqrt((x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ);
@@ -337,7 +278,7 @@ namespace ASL.FogOfWar
                 return;
             if (m_Arrives.Contains(index) == false)
             {
-                if (AddLegalPos(x - centX, z - centZ))
+                if (IsPositionInvisible(x - centX, z - centZ))
                 {
                     m_RayCastQueue.Enqueue(new FOWMapPos(x, z));
                     m_Arrives.Add(index);
@@ -345,7 +286,7 @@ namespace ASL.FogOfWar
             }
         }
 
-        private bool AddLegalPos(int x, int y)
+        private bool IsPositionInvisible(int x, int y)
         {
             float angle = Mathf.Atan2((y * m_DeltaZ), (x * m_DeltaX)) * Mathf.Rad2Deg;
             //if (angle < 0) angle += 360;

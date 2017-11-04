@@ -4,7 +4,6 @@
 	{
 		_MainTex ("Texture", 2D) = "white" {}
 		_FogColor("FogColor", color) = (0,0,0,1)
-		_FogExploredAlpha("FogExploredAlpha", range(0,1)) = 0.5
 		_FogTex ("FogTex", 2D) = "black" {}
 		_MixValue("MixValue", float) = 0
 		_BlurOffset("BlurOffset", float) = 0
@@ -51,7 +50,6 @@
 			half _BlurOffset;
 
 			half4 _FogColor;
-			half _FogExploredAlpha;
 
 			float4x4 internal_CameraToProjector;
 
@@ -79,7 +77,7 @@
 				float2 atten = saturate((0.5 - abs(pos.xy - 0.5)) / (1 - 0.9));
 
 				fixed4 col;
-				col.rgb = lerp(_FogColor.rgb, fixed3(1, 1, 1), tex.r*_FogExploredAlpha);
+				col.rgb = lerp(_FogColor.rgb, fixed3(1, 1, 1), tex.r*_FogColor.a);
 
 				//fixed4 col = fixed4(tex.r, tex.r, tex.r, 1)*0.5;
 				fixed visual = lerp(tex.b, tex.g, _MixValue);

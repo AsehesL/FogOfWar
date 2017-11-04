@@ -3,9 +3,14 @@ using System.Collections;
 
 namespace ASL.FogOfWar
 {
+    /// <summary>
+    /// 战争迷雾纹理类
+    /// </summary>
     internal class FOWMaskTexture
     {
-
+        /// <summary>
+        /// 战争迷雾纹理：R通道叠加所有已探索区域，G通道为当前更新的可见区域，B通道为上一次更新的可见区域
+        /// </summary>
         public Texture2D texture { get { return m_MaskTexture; } }
 
         private Texture2D m_MaskTexture;
@@ -46,8 +51,7 @@ namespace ASL.FogOfWar
             bool isNew = false;
             if (m_MaskTexture == null)
             {
-                m_MaskTexture = new Texture2D(m_Width, m_Height);
-                m_MaskTexture.wrapMode = TextureWrapMode.Clamp;
+                m_MaskTexture = GenerateTexture();
                 isNew = true;
             }
             for (int i = 0; i < m_MaskTexture.width; i++)
@@ -76,6 +80,13 @@ namespace ASL.FogOfWar
             m_MaskTexture = null;
             m_MaskCache = null;
             m_Visible = null;
+        }
+
+        private Texture2D GenerateTexture()
+        {
+            Texture2D tex = new Texture2D(m_Width, m_Height, TextureFormat.RGB24, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            return tex;
         }
     }
 }
