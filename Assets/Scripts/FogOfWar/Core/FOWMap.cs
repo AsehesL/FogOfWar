@@ -44,10 +44,12 @@ namespace ASL.FogOfWar
 
         private float[] m_SortAngle = new float[4];
 
-        private Thread m_Thread;
-        private object m_Lock;
+        private WaitCallback m_WaitCallBack;
 
-        private Queue<FOWFieldData> m_OpenFOVList = new Queue<FOWFieldData>();
+        //private Thread m_Thread;
+        //private object m_Lock;
+
+        //private Queue<FOWFieldData> m_OpenFOVList = new Queue<FOWFieldData>();
 
         private Vector3 m_BeginPosition;
         
@@ -58,8 +60,9 @@ namespace ASL.FogOfWar
 
         public FOWMap(Vector3 begionPosition, float xSize, float zSize, int texWidth, int texHeight, float heightRange)
         {
-            m_Lock = new object();
-            m_Thread = new Thread(FOVAction);
+            //m_Lock = new object();
+            //m_Thread = new Thread(FOVAction);
+            m_WaitCallBack = new WaitCallback(this.FOVAction2);
 
             m_MapData = new byte[texWidth, texHeight];
             m_MaskTexture = new FOWMaskTexture(texWidth, texHeight);
@@ -88,15 +91,12 @@ namespace ASL.FogOfWar
                 }
             }
 
-            m_Thread.Start();
+            //m_Thread.Start();
         }
 
         public bool RefreshTexture()
         {
-            lock (m_Lock)
-            {
-                return m_MaskTexture.RefreshTexture();
-            }
+            return m_MaskTexture.RefreshTexture();
         }
 
         public Texture2D GetTexture()
@@ -106,11 +106,44 @@ namespace ASL.FogOfWar
 
         public void OpenFOV(Vector3 worldPosition, float radius)
         {
-            lock (m_Lock)
-            {
-                m_OpenFOVList.Enqueue(new FOWFieldData(worldPosition, radius));
-            }
-            
+            ThreadPool.QueueUserWorkItem(m_WaitCallBack, new FOWFieldData(worldPosition, radius));
+            //lock (m_Lock)
+            //{
+            //    m_OpenFOVList.Enqueue(new FOWFieldData(worldPosition, radius));
+            //}
+
+
+            //var dt = m_OpenFOVList.Dequeue();
+            //Vector3 worldPosition = dt.position;
+            //float radius = dt.radius;
+            //int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x) / m_DeltaX);
+            //int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z) / m_DeltaZ);
+
+            //if (x < 0 || x >= m_TexWidth)
+            //    return;
+            //if (z < 0 || z >= m_TexHdight)
+            //    return;
+            //if (m_MapData[x, z] != 0)
+            //    return;
+            //m_Queue.Clear();
+            //m_Arrives.Clear();
+
+            //m_Queue.Enqueue(new FOWMapPos(x, z));
+            //m_Arrives.Add(z * m_TexWidth + x);
+
+            //while (m_Queue.Count > 0)
+            //{
+            //    var root = m_Queue.Dequeue();
+            //    if (m_MapData[root.x, root.y] != 0)
+            //    {
+            //        RayCast(root, x, z, radius);
+            //        continue;
+            //    }
+            //    SetAsVisible(root.x - 1, root.y, x, z, radius);
+            //    SetAsVisible(root.x, root.y - 1, x, z, radius);
+            //    SetAsVisible(root.x + 1, root.y, x, z, radius);
+            //    SetAsVisible(root.x, root.y + 1, x, z, radius);
+            //}
         }
 
         public bool IsVisibleInMap(int x, int z)
@@ -120,9 +153,9 @@ namespace ASL.FogOfWar
 
         public void Release()
         {
-            if (m_Thread != null)
-                m_Thread.Abort();
-            m_Thread = null;
+            //if (m_Thread != null)
+            //    m_Thread.Abort();
+            //m_Thread = null;
             if (m_MaskTexture != null)
                 m_MaskTexture.Release();
             m_MaskTexture = null;
@@ -134,56 +167,92 @@ namespace ASL.FogOfWar
                 m_RayCastQueue.Clear();
             if (m_Arrives != null)
                 m_Arrives.Clear();
-            if (m_OpenFOVList != null)
-                m_OpenFOVList.Clear();
+            //if (m_OpenFOVList != null)
+            //    m_OpenFOVList.Clear();
             m_Queue = null;
             m_RayCastQueue = null;
             m_Arrives = null;
-            m_OpenFOVList = null;
-            m_Lock = null;
+            //m_OpenFOVList = null;
+            //m_Lock = null;
+        }
+
+        private void FOVAction2(object state)
+        {
+            var dt = (FOWFieldData)state;
+            Vector3 worldPosition = dt.position;
+            float radius = dt.radius;
+
+            int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x) / m_DeltaX);
+            int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z) / m_DeltaZ);
+
+            if (x < 0 || x >= m_TexWidth)
+                return;
+            if (z < 0 || z >= m_TexHdight)
+                return;
+            if (m_MapData[x, z] != 0)
+                return;
+            m_Queue.Clear();
+            m_Arrives.Clear();
+
+            m_Queue.Enqueue(new FOWMapPos(x, z));
+            m_Arrives.Add(z * m_TexWidth + x);
+
+            while (m_Queue.Count > 0)
+            {
+                var root = m_Queue.Dequeue();
+                if (m_MapData[root.x, root.y] != 0)
+                {
+                    RayCast(root, x, z, radius);
+                    continue;
+                }
+                SetAsVisible(root.x - 1, root.y, x, z, radius);
+                SetAsVisible(root.x, root.y - 1, x, z, radius);
+                SetAsVisible(root.x + 1, root.y, x, z, radius);
+                SetAsVisible(root.x, root.y + 1, x, z, radius);
+            }
         }
 
         private void FOVAction()
         {
             while (true)
             {
-                lock (m_Lock)
+                //lock (m_Lock)
                 {
-                    if (m_OpenFOVList != null && m_OpenFOVList.Count > 0)
+                    //if (m_OpenFOVList != null && m_OpenFOVList.Count > 0)
                     {
-                        while(m_OpenFOVList.Count>0)
+                        //while(m_OpenFOVList.Count>0)
                         {
-                            var dt = m_OpenFOVList.Dequeue();
-                            Vector3 worldPosition = dt.position;
-                            float radius = dt.radius;
-                            int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x) / m_DeltaX);
-                            int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z) / m_DeltaZ);
+                            //var dt = m_OpenFOVList.Dequeue();
+                            //Vector3 worldPosition = dt.position;
+                            //float radius = dt.radius;
+                            //int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x) / m_DeltaX);
+                            //int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z) / m_DeltaZ);
 
-                            if (x < 0 || x >= m_TexWidth)
-                                continue;
-                            if (z < 0 || z >= m_TexHdight)
-                                continue;
-                            if (m_MapData[x, z] != 0)
-                                continue;
-                            m_Queue.Clear();
-                            m_Arrives.Clear();
+                            //if (x < 0 || x >= m_TexWidth)
+                            //    continue;
+                            //if (z < 0 || z >= m_TexHdight)
+                            //    continue;
+                            //if (m_MapData[x, z] != 0)
+                            //    continue;
+                            //m_Queue.Clear();
+                            //m_Arrives.Clear();
 
-                            m_Queue.Enqueue(new FOWMapPos(x, z));
-                            m_Arrives.Add(z * m_TexWidth + x);
+                            //m_Queue.Enqueue(new FOWMapPos(x, z));
+                            //m_Arrives.Add(z * m_TexWidth + x);
 
-                            while (m_Queue.Count > 0)
-                            {
-                                var root = m_Queue.Dequeue();
-                                if (m_MapData[root.x, root.y] != 0)
-                                {
-                                    RayCast(root, x, z, radius);
-                                    continue;
-                                }
-                                SetAsVisible(root.x - 1, root.y, x, z, radius);
-                                SetAsVisible(root.x, root.y - 1, x, z, radius);
-                                SetAsVisible(root.x + 1, root.y, x, z, radius);
-                                SetAsVisible(root.x, root.y + 1, x, z, radius);
-                            }
+                            //while (m_Queue.Count > 0)
+                            //{
+                            //    var root = m_Queue.Dequeue();
+                            //    if (m_MapData[root.x, root.y] != 0)
+                            //    {
+                            //        RayCast(root, x, z, radius);
+                            //        continue;
+                            //    }
+                            //    SetAsVisible(root.x - 1, root.y, x, z, radius);
+                            //    SetAsVisible(root.x, root.y - 1, x, z, radius);
+                            //    SetAsVisible(root.x + 1, root.y, x, z, radius);
+                            //    SetAsVisible(root.x, root.y + 1, x, z, radius);
+                            //}
                         }
                     }
                 }

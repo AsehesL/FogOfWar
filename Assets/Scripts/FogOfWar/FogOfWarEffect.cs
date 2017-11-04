@@ -21,6 +21,10 @@ public class FogOfWarEffect : MonoBehaviour {
     private static FogOfWarEffect instance;
 
     [SerializeField]
+    private Color m_FogColor = Color.black;
+    [SerializeField]
+    private float m_FogExploredAlpha = 0.5f;
+    [SerializeField]
     private float m_XSize;
     [SerializeField]
     private float m_ZSize;
@@ -111,7 +115,7 @@ public class FogOfWarEffect : MonoBehaviour {
         m_DeltaX = m_XSize / m_TexWidth;
         m_DeltaZ = m_ZSize / m_TexHeight;
         m_BeginPos = m_CenterPosition - new Vector3(m_XSize / 2, 0, m_ZSize / 2);
-        m_Renderer = new FOWRenderer(effectShader, m_CenterPosition, m_XSize, m_ZSize, m_BlurOffset);
+        m_Renderer = new FOWRenderer(effectShader, m_CenterPosition, m_XSize, m_ZSize, m_FogColor, m_FogExploredAlpha, m_BlurOffset);
         m_Map = new FOWMap(m_BeginPos, m_XSize, m_ZSize, m_TexWidth, m_TexHeight, m_HeightRange);
         return true;
     }
@@ -122,12 +126,15 @@ public class FogOfWarEffect : MonoBehaviour {
             return;
         if (!Instance.m_IsInitialized)
             return;
+      
         int x = Mathf.FloorToInt((explorer.transform.position.x - Instance.m_BeginPos.x) / Instance.m_DeltaX);
         int z = Mathf.FloorToInt((explorer.transform.position.z - Instance.m_BeginPos.z) / Instance.m_DeltaZ);
+       
         if (explorer.IsPosChange(x, z))
         {
             Instance.m_Map.OpenFOV(explorer.transform.position, explorer.radius);
         }
+        
     }
 
     public static bool IsVisibleInMap(Vector3 position)

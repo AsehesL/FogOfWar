@@ -10,19 +10,12 @@ public class FogOfWarStalker : MonoBehaviour
 
     private float m_RequestTime;
 
-    private Renderer[] m_Renderers;
-
     private bool m_Visible = true;
 
-    void Start()
-    {
-        m_Renderers = gameObject.GetComponentsInChildren<Renderer>();
-    }
-
-    void Update()
+    void FixedUpdate()
     {
         m_RequestTime += Time.deltaTime;
-        if (m_RequestTime > 1.0f)
+        if (m_RequestTime > 0.3f)
         {
             m_RequestTime = 0;
             bool visible = FogOfWarEffect.IsVisibleInMap(transform.position);
@@ -35,10 +28,10 @@ public class FogOfWarStalker : MonoBehaviour
         if (m_Visible != visible)
         {
             m_Visible = visible;
-            for (int i = 0; i < m_Renderers.Length; i++)
-            {
-                m_Renderers[i].enabled = visible;
-            }
+                for (int i = 0; i < transform.childCount; i++)
+                {
+                    transform.GetChild(i).gameObject.SetActive(visible);
+                }
         }
     }
 }
