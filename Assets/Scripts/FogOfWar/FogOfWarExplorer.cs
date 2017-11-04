@@ -54,10 +54,18 @@ public class FogOfWarExplorer : MonoBehaviour
 	            m_IsInitialized = true;
 	            m_FieldData.position = transform.position;
 	            m_FieldData.radius = radius;
-                FogOfWarEffect.SetVisibleAtPosition(m_FieldData);
-            }
+                //FogOfWarEffect.SetVisibleAtPosition(m_FieldData);
+	            FogOfWarEffect.UpdateFOWFieldData(m_FieldData);
+	        }
 	    }
 	}
+
+    void OnDestroy()
+    {
+        if (m_FieldData != null)
+            FogOfWarEffect.ReleaseFOWFieldData(m_FieldData);
+        m_FieldData = null;
+    }
 
     void OnDrawGizmosSelected()
     {

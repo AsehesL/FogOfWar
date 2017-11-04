@@ -65,7 +65,6 @@
 
 				pos.xy /= pos.w;
 
-				//fixed4 tex = tex2Dproj(_FogTex, UNITY_PROJ_COORD(pos));
 				fixed3 tex = tex2D(_FogTex, pos.xy).rgb;
 
 				float2 atten = saturate((0.5 - abs(pos.xy - 0.5)) / (1 - 0.9));
@@ -73,9 +72,7 @@
 				fixed4 col;
 				col.rgb = lerp(_FogColor.rgb, fixed3(1, 1, 1), tex.r*_FogColor.a);
 
-				//fixed4 col = fixed4(tex.r, tex.r, tex.r, 1)*0.5;
 				fixed visual = lerp(tex.b, tex.g, _MixValue);
-				//visual = lerp(0, visual, tex.r * _FogExploredAlpha);
 				col.rgb = lerp(col.rgb, fixed3(1, 1, 1), visual)*atten.x*atten.y;
 
 				c.rgb *= col.rgb;

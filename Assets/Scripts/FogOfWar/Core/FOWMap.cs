@@ -102,9 +102,10 @@ namespace ASL.FogOfWar
         /// 根据视野数据设置可见
         /// </summary>
         /// <param name="fieldData">视野数据</param>
-        public void SetVisible(FOWFieldData fieldData)
+        //public void SetVisible(FOWFieldData fieldData)
+        public void SetVisible(List<FOWFieldData> fieldDatas)
         {
-            ThreadPool.QueueUserWorkItem(m_FOVCalculator, fieldData);
+            ThreadPool.QueueUserWorkItem(m_FOVCalculator, fieldDatas);
         }
 
         /// <summary>
@@ -143,38 +144,45 @@ namespace ASL.FogOfWar
         /// <param name="state">参数（视野数据）</param>
         private void CalculateFOV(object state)
         {
-            var dt = (FOWFieldData)state;
-            Vector3 worldPosition = dt.position;
-            float radius = dt.radius;
-
-            int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x) / m_DeltaX);
-            int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z) / m_DeltaZ);
-
-            if (x < 0 || x >= m_TexWidth)
+            if (state == null)
                 return;
-            if (z < 0 || z >= m_TexHdight)
-                return;
-            if (m_MapData[x, z] != 0)
-                return;
-            m_Queue.Clear();
-            m_Arrives.Clear();
-
-            m_Queue.Enqueue(new FOWMapPos(x, z));
-            m_Arrives.Add(z * m_TexWidth + x);
-            m_MaskTexture.SetAsVisible(x, z);
-
-            while (m_Queue.Count > 0)
+            var dt = (List<FOWFieldData>)state;
+            for (int i = 0; i < dt.Count; i++)
             {
-                var root = m_Queue.Dequeue();
-                if (m_MapData[root.x, root.y] != 0)
-                {
-                    RayCast(root, x, z, radius);
+                if (dt[i] == null)
                     continue;
+                Vector3 worldPosition = dt[i].position;
+                float radius = dt[i].radius;
+
+                int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x)/m_DeltaX);
+                int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z)/m_DeltaZ);
+
+                if (x < 0 || x >= m_TexWidth)
+                    continue;
+                if (z < 0 || z >= m_TexHdight)
+                    continue;
+                if (m_MapData[x, z] != 0)
+                    continue;
+                m_Queue.Clear();
+                m_Arrives.Clear();
+
+                m_Queue.Enqueue(new FOWMapPos(x, z));
+                m_Arrives.Add(z*m_TexWidth + x);
+                m_MaskTexture.SetAsVisible(x, z);
+
+                while (m_Queue.Count > 0)
+                {
+                    var root = m_Queue.Dequeue();
+                    if (m_MapData[root.x, root.y] != 0)
+                    {
+                        RayCast(root, x, z, radius);
+                        continue;
+                    }
+                    SetVisibleAtPosition(root.x - 1, root.y, x, z, radius);
+                    SetVisibleAtPosition(root.x, root.y - 1, x, z, radius);
+                    SetVisibleAtPosition(root.x + 1, root.y, x, z, radius);
+                    SetVisibleAtPosition(root.x, root.y + 1, x, z, radius);
                 }
-                SetVisibleAtPosition(root.x - 1, root.y, x, z, radius);
-                SetVisibleAtPosition(root.x, root.y - 1, x, z, radius);
-                SetVisibleAtPosition(root.x + 1, root.y, x, z, radius);
-                SetVisibleAtPosition(root.x, root.y + 1, x, z, radius);
             }
         }
 

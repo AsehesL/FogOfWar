@@ -57,6 +57,16 @@ public class FogOfWarEffect : MonoBehaviour {
     /// </summary>
     public Vector3 centerPosition { get { return m_CenterPosition; } }
 
+    public Texture2D fowMaskTexture
+    {
+        get
+        {
+            if (m_Map != null)
+                return m_Map.GetFOWTexture();
+            return null;
+        }
+    }
+
     [SerializeField]
     private Color m_FogColor = Color.black;
     [SerializeField]
@@ -115,6 +125,10 @@ public class FogOfWarEffect : MonoBehaviour {
 
     private Vector3 m_BeginPos;
 
+    private List<FOWFieldData> m_FieldDatas;
+
+    private bool m_IsFieldDatasUpdated;
+
     void Awake()
     {
         m_IsInitialized = Init();
@@ -127,6 +141,9 @@ public class FogOfWarEffect : MonoBehaviour {
             m_Renderer.Release();
         if (m_Map != null)
             m_Map.Release();
+        if (m_FieldDatas != null)
+            m_FieldDatas.Clear();
+        m_FieldDatas = null;
         m_Renderer = null;
         m_Map = null;
         instance = null;
@@ -147,6 +164,7 @@ public class FogOfWarEffect : MonoBehaviour {
                     
                     m_Renderer.SetFogFade(0);
                     m_MixTime = 0;
+                    m_IsFieldDatasUpdated = false;
                     //m_Renderer.SetFogTexture(m_Map.GetFOWTexture());
                 }
             }
@@ -197,21 +215,50 @@ public class FogOfWarEffect : MonoBehaviour {
         return new FOWMapPos(x, z);
     }
 
-    /// <summary>
-    /// 将指定位置设置为可见
-    /// </summary>
-    /// <param name="fieldData">视野</param>
-    public static void SetVisibleAtPosition(FOWFieldData fieldData)
+    ///// <summary>
+    ///// 将指定位置设置为可见
+    ///// </summary>
+    ///// <param name="fieldData">视野</param>
+    //public static void SetVisibleAtPosition(FOWFieldData fieldData)
+    //{
+    //    if (!Instance)
+    //        return;
+    //    if (!Instance.m_IsInitialized)
+    //        return;
+    //    if (fieldData == null)
+    //        return;
+
+    //    Instance.m_Map.SetVisible(fieldData);
+
+    //}
+
+    public static void UpdateFOWFieldData(FOWFieldData data)
     {
         if (!Instance)
             return;
         if (!Instance.m_IsInitialized)
             return;
-        if (fieldData == null)
+        if (Instance.m_FieldDatas == null)
+            Instance.m_FieldDatas = new List<FOWFieldData>();
+        if (!Instance.m_FieldDatas.Contains(data))
+        {
+            Instance.m_FieldDatas.Add(data);
+        }
+        if (!Instance.m_IsFieldDatasUpdated)
+        {
+            Instance.m_Map.SetVisible(Instance.m_FieldDatas);
+            Instance.m_IsFieldDatasUpdated = true;
+        }
+    }
+
+    public static void ReleaseFOWFieldData(FOWFieldData data)
+    {
+        if (!instance)
             return;
-
-        Instance.m_Map.SetVisible(fieldData);
-
+        if (!instance.m_IsInitialized)
+            return;
+        if (instance.m_FieldDatas != null && instance.m_FieldDatas.Contains(data))
+            instance.m_FieldDatas.Remove(data);
     }
 
     /// <summary>
