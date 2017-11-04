@@ -6,7 +6,6 @@
 		_FogColor("FogColor", color) = (0,0,0,1)
 		_FogTex ("FogTex", 2D) = "black" {}
 		_MixValue("MixValue", float) = 0
-		_BlurOffset("BlurOffset", float) = 0
 	}
 	SubShader
 	{
@@ -47,7 +46,6 @@
 			sampler2D _FogTex;
 
 			half _MixValue;
-			half _BlurOffset;
 
 			half4 _FogColor;
 
@@ -68,11 +66,7 @@
 				pos.xy /= pos.w;
 
 				//fixed4 tex = tex2Dproj(_FogTex, UNITY_PROJ_COORD(pos));
-				fixed3 tex = tex2D(_FogTex, pos.xy).rgb*0.5;
-				tex.rgb += tex2D(_FogTex, pos.xy + half2(_BlurOffset, 0)).rgb*0.125;
-				tex.rgb += tex2D(_FogTex, pos.xy - half2(_BlurOffset, 0)).rgb*0.125;
-				tex.rgb += tex2D(_FogTex, pos.xy + half2(0, _BlurOffset)).rgb*0.125;
-				tex.rgb += tex2D(_FogTex, pos.xy - half2(0, _BlurOffset)).rgb*0.125;
+				fixed3 tex = tex2D(_FogTex, pos.xy).rgb;
 
 				float2 atten = saturate((0.5 - abs(pos.xy - 0.5)) / (1 - 0.9));
 

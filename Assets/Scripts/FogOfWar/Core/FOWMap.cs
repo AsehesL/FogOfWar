@@ -161,6 +161,7 @@ namespace ASL.FogOfWar
 
             m_Queue.Enqueue(new FOWMapPos(x, z));
             m_Arrives.Add(z * m_TexWidth + x);
+            m_MaskTexture.SetAsVisible(x, z);
 
             while (m_Queue.Count > 0)
             {

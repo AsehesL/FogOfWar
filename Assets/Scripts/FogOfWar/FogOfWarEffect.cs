@@ -56,10 +56,6 @@ public class FogOfWarEffect : MonoBehaviour {
     /// 迷雾区域中心坐标
     /// </summary>
     public Vector3 centerPosition { get { return m_CenterPosition; } }
-    /// <summary>
-    /// 迷雾模糊偏移量
-    /// </summary>
-    public float fogBlurOffset { get { return m_BlurOffset; } }
 
     [SerializeField]
     private Color m_FogColor = Color.black;
@@ -75,13 +71,25 @@ public class FogOfWarEffect : MonoBehaviour {
     private Vector3 m_CenterPosition;
     [SerializeField]
     private float m_HeightRange;
+    /// <summary>
+    /// 模糊偏移量
+    /// </summary>
     [SerializeField]
     private float m_BlurOffset;
+    /// <summary>
+    /// 模糊迭代次数
+    /// </summary>
+    [SerializeField]
+    private int m_BlurInteration;
 
     /// <summary>
     /// 迷雾特效shader
     /// </summary>
     public Shader effectShader;
+    /// <summary>
+    /// 模糊shader
+    /// </summary>
+    public Shader blurShader;
 
     /// <summary>
     /// 战争迷雾地图对象
@@ -139,7 +147,7 @@ public class FogOfWarEffect : MonoBehaviour {
                     
                     m_Renderer.SetFogFade(0);
                     m_MixTime = 0;
-                    m_Renderer.SetFogTexture(m_Map.GetFOWTexture());
+                    //m_Renderer.SetFogTexture(m_Map.GetFOWTexture());
                 }
             }
             else
@@ -166,7 +174,7 @@ public class FogOfWarEffect : MonoBehaviour {
         m_DeltaX = m_XSize / m_TexWidth;
         m_DeltaZ = m_ZSize / m_TexHeight;
         m_BeginPos = m_CenterPosition - new Vector3(m_XSize / 2, 0, m_ZSize / 2);
-        m_Renderer = new FOWRenderer(effectShader, m_CenterPosition, m_XSize, m_ZSize, m_FogColor, m_BlurOffset);
+        m_Renderer = new FOWRenderer(effectShader, blurShader, m_CenterPosition, m_XSize, m_ZSize, m_FogColor, m_BlurOffset, m_BlurInteration);
         m_Map = new FOWMap(m_BeginPos, m_XSize, m_ZSize, m_TexWidth, m_TexHeight, m_HeightRange);
         return true;
     }
@@ -231,7 +239,7 @@ public class FogOfWarEffect : MonoBehaviour {
             Graphics.Blit(src, dst);
         else
         {
-            m_Renderer.RenderFogOfWar(m_Camera.cameraToWorldMatrix, src, dst);
+            m_Renderer.RenderFogOfWar(m_Camera.cameraToWorldMatrix, m_Map.GetFOWTexture(), src, dst);
         }
     }
 

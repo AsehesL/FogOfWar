@@ -6,6 +6,7 @@ using UnityEngine.AI;
 public class TestPlayer : MonoBehaviour
 {
     public float distance;
+    public float angle = 45;
 
     private Vector3 m_CameraPosition;
 
@@ -14,7 +15,7 @@ public class TestPlayer : MonoBehaviour
 	void Start ()
 	{
 	    m_Agent = gameObject.GetComponent<NavMeshAgent>();
-	    Camera.main.transform.rotation = Quaternion.Euler(45, 0, 0);
+	    Camera.main.transform.rotation = Quaternion.Euler(angle, 0, 0);
 	    Camera.main.transform.position = transform.position - Camera.main.transform.forward*distance;
 	}
 	
