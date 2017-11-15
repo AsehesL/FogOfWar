@@ -246,8 +246,11 @@ public class FogOfWarEffect : MonoBehaviour {
         }
         if (!Instance.m_IsFieldDatasUpdated)
         {
-            Instance.m_Map.SetVisible(Instance.m_FieldDatas);
-            Instance.m_IsFieldDatasUpdated = true;
+            //lock (Instance.m_FieldDatas)
+            {
+                Instance.m_Map.SetVisible(Instance.m_FieldDatas);
+                Instance.m_IsFieldDatasUpdated = true;
+            }
         }
     }
 
@@ -257,8 +260,11 @@ public class FogOfWarEffect : MonoBehaviour {
             return;
         if (!instance.m_IsInitialized)
             return;
-        if (instance.m_FieldDatas != null && instance.m_FieldDatas.Contains(data))
-            instance.m_FieldDatas.Remove(data);
+        //lock (instance.m_FieldDatas)
+        {
+            if (instance.m_FieldDatas != null && instance.m_FieldDatas.Contains(data))
+                instance.m_FieldDatas.Remove(data);
+        }
     }
 
     /// <summary>

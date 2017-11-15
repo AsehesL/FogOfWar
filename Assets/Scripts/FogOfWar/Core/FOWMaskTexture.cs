@@ -8,17 +8,28 @@ namespace ASL.FogOfWar
     /// </summary>
     internal class FOWMaskTexture
     {
+        private enum UpdateMark
+        {
+            None,
+            Changed,
+            EndUpdate,
+        }
+
         /// <summary>
         /// 战争迷雾纹理：R通道叠加所有已探索区域，G通道为当前更新的可见区域，B通道为上一次更新的可见区域
         /// </summary>
-        public Texture2D texture { get { return m_MaskTexture; } }
+        public Texture2D texture
+        {
+            get { return m_MaskTexture; }
+        }
 
         private Texture2D m_MaskTexture;
 
         private byte[,] m_MaskCache;
         private byte[,] m_Visible;
 
-        private bool m_IsUpdated;
+        //private bool m_IsUpdated;
+        private UpdateMark m_UpdateMark;
 
         private int m_Width;
         private int m_Height;
@@ -34,7 +45,13 @@ namespace ASL.FogOfWar
         public void SetAsVisible(int x, int y)
         {
             m_MaskCache[x, y] = 1;
-            m_IsUpdated = true;
+            m_UpdateMark = UpdateMark.Changed;
+        }
+
+        public void MarkAsUpdated()
+        {
+            if (m_UpdateMark != UpdateMark.Changed)
+                m_UpdateMark = UpdateMark.EndUpdate;
         }
 
         public bool IsVisible(int x, int y)
@@ -46,8 +63,10 @@ namespace ASL.FogOfWar
 
         public bool RefreshTexture()
         {
-            if (!m_IsUpdated)
+            if (m_UpdateMark == UpdateMark.None)
                 return false;
+            if (m_UpdateMark == UpdateMark.EndUpdate)
+                return true;
             bool isNew = false;
             if (m_MaskTexture == null)
             {
@@ -64,12 +83,12 @@ namespace ASL.FogOfWar
                     origin.b = origin.g;
                     origin.g = isVisible ? 1 : 0;
                     m_MaskTexture.SetPixel(i, j, origin);
-                    m_Visible[i, j] = (byte)(isVisible ? 1 : 0);
+                    m_Visible[i, j] = (byte) (isVisible ? 1 : 0);
                     m_MaskCache[i, j] = 0;
                 }
             }
             m_MaskTexture.Apply();
-            m_IsUpdated = false;
+            m_UpdateMark = UpdateMark.None;
             return true;
         }
 
