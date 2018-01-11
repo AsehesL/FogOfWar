@@ -37,6 +37,7 @@ namespace ASL.FogOfWar
             proj.m33 = 1.0f;
 
             m_WorldToProjector = proj*worldToLocal;
+            m_EffectMaterial.SetMatrix("internal_WorldToProjector", m_WorldToProjector);
 
             if (blurShader && blurInteration > 0 && blurOffset > 0)
             {
@@ -49,12 +50,42 @@ namespace ASL.FogOfWar
         /// <summary>
         /// 渲染战争迷雾
         /// </summary>
-        /// <param name="cameraToWorld"></param>
+        /// <param name="camera"></param>
         /// <param name="src"></param>
         /// <param name="dst"></param>
-        public void RenderFogOfWar(Matrix4x4 cameraToWorld, Texture2D fogTexture, RenderTexture src, RenderTexture dst)
+        public void RenderFogOfWar(Camera camera, Texture2D fogTexture, RenderTexture src, RenderTexture dst)
         {
-            m_EffectMaterial.SetMatrix("internal_CameraToProjector", m_WorldToProjector*cameraToWorld);
+            Matrix4x4 frustumCorners = Matrix4x4.identity;
+
+            float fovWHalf = camera.fieldOfView * 0.5f;
+
+            Vector3 toRight = camera.transform.right * camera.nearClipPlane * Mathf.Tan(fovWHalf * Mathf.Deg2Rad) * camera.aspect;
+            Vector3 toTop = camera.transform.up * camera.nearClipPlane * Mathf.Tan(fovWHalf * Mathf.Deg2Rad);
+
+            Vector3 topLeft = (camera.transform.forward * camera.nearClipPlane - toRight + toTop);
+            float camScale = topLeft.magnitude * camera.farClipPlane / camera.nearClipPlane;
+
+            topLeft.Normalize();
+            topLeft *= camScale;
+
+            Vector3 topRight = (camera.transform.forward * camera.nearClipPlane + toRight + toTop);
+            topRight.Normalize();
+            topRight *= camScale;
+
+            Vector3 bottomRight = (camera.transform.forward * camera.nearClipPlane + toRight - toTop);
+            bottomRight.Normalize();
+            bottomRight *= camScale;
+
+            Vector3 bottomLeft = (camera.transform.forward * camera.nearClipPlane - toRight - toTop);
+            bottomLeft.Normalize();
+            bottomLeft *= camScale;
+
+            frustumCorners.SetRow(0, topLeft);
+            frustumCorners.SetRow(1, topRight);
+            frustumCorners.SetRow(2, bottomRight);
+            frustumCorners.SetRow(3, bottomLeft);
+            m_EffectMaterial.SetMatrix("_FrustumCorners", frustumCorners);
+            
 
             if (m_BlurMaterial && fogTexture)
             {
@@ -68,25 +99,15 @@ namespace ASL.FogOfWar
                     rt = rt2;
                 }
                 m_EffectMaterial.SetTexture("_FogTex", rt);
-                Graphics.Blit(src, dst, m_EffectMaterial);
+                CustomGraphicsBlit(src, dst, m_EffectMaterial);
                 RenderTexture.ReleaseTemporary(rt);
             }
             else
             {
                 m_EffectMaterial.SetTexture("_FogTex", fogTexture);
-                Graphics.Blit(src, dst, m_EffectMaterial);
+                CustomGraphicsBlit(src, dst, m_EffectMaterial);
             }
         }
-       
-
-        ///// <summary>
-        ///// 设置迷雾纹理
-        ///// </summary>
-        ///// <param name="texture"></param>
-        //public void SetFogTexture(Texture2D texture)
-        //{
-        //    m_EffectMaterial.SetTexture("_FogTex", texture);
-        //}
 
         /// <summary>
         /// 设置当前迷雾和上一次更新的迷雾的插值
@@ -105,6 +126,37 @@ namespace ASL.FogOfWar
                 Object.Destroy(m_BlurMaterial);
             m_EffectMaterial = null;
             m_BlurMaterial = null;
+        }
+
+        private static void CustomGraphicsBlit(RenderTexture source, RenderTexture dest, Material fxMaterial)
+        {
+            //Graphics.Blit(source, dest, fxMaterial);
+            //return;
+            RenderTexture.active = dest;
+
+            fxMaterial.SetTexture("_MainTex", source);
+
+            GL.PushMatrix();
+            GL.LoadOrtho();
+
+            fxMaterial.SetPass(0);
+
+            GL.Begin(GL.QUADS);
+
+            GL.MultiTexCoord2(0, 0.0f, 0.0f);
+            GL.Vertex3(0.0f, 0.0f, 3.0f); // BL
+
+            GL.MultiTexCoord2(0, 1.0f, 0.0f);
+            GL.Vertex3(1.0f, 0.0f, 2.0f); // BR
+
+            GL.MultiTexCoord2(0, 1.0f, 1.0f);
+            GL.Vertex3(1.0f, 1.0f, 1.0f); // TR
+
+            GL.MultiTexCoord2(0, 0.0f, 1.0f);
+            GL.Vertex3(0.0f, 1.0f, 0.0f); // TL
+
+            GL.End();
+            GL.PopMatrix();
         }
     }
 }

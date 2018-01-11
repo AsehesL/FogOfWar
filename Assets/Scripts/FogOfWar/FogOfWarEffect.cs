@@ -189,6 +189,7 @@ public class FogOfWarEffect : MonoBehaviour {
         m_Camera = gameObject.GetComponent<Camera>();
         if (m_Camera == null)
             return false;
+        m_Camera.depthTextureMode |= DepthTextureMode.Depth;
         m_DeltaX = m_XSize / m_TexWidth;
         m_DeltaZ = m_ZSize / m_TexHeight;
         m_BeginPos = m_CenterPosition - new Vector3(m_XSize / 2, 0, m_ZSize / 2);
@@ -284,15 +285,14 @@ public class FogOfWarEffect : MonoBehaviour {
         return Instance.m_Map.IsVisibleInMap(x, z);
 
     }
-
-
+    
     void OnRenderImage(RenderTexture src, RenderTexture dst)
     {
         if (!m_IsInitialized)
             Graphics.Blit(src, dst);
         else
         {
-            m_Renderer.RenderFogOfWar(m_Camera.cameraToWorldMatrix, m_Map.GetFOWTexture(), src, dst);
+            m_Renderer.RenderFogOfWar(m_Camera, m_Map.GetFOWTexture(), src, dst);
         }
     }
 
