@@ -1595,7 +1595,7 @@ MonoBehaviour:
   m_BlurOffset: 0.005
   m_BlurInteration: 2
   effectShader: {fileID: 4800000, guid: de59591eb7a71f742a1a396afaf86032, type: 3}
-  blurShader: {fileID: 0}
+  blurShader: {fileID: 4800000, guid: 5401191c1440b294aaa32c0c975fb5d6, type: 3}
 --- !u!1 &1082297295
 GameObject:
   m_ObjectHideFlags: 0
