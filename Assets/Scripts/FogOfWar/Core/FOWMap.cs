@@ -167,7 +167,7 @@ namespace ASL.FogOfWar
                     if (dt[i] == null)
                         continue;
                     Vector3 worldPosition = dt[i].position;
-                    float radius = dt[i].radius;
+                    float radiusSq = dt[i].radiusSquare;
 
                     int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x)/m_DeltaX);
                     int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z)/m_DeltaZ);
@@ -192,13 +192,13 @@ namespace ASL.FogOfWar
                         var root = m_Queue.Dequeue();
                         if (m_MapData[root.x, root.y] != 0)
                         {
-                            RayCast(root, x, z, radius);
+                            RayCast(root, x, z, radiusSq);
                             continue;
                         }
-                        SetVisibleAtPosition(root.x - 1, root.y, x, z, radius);
-                        SetVisibleAtPosition(root.x, root.y - 1, x, z, radius);
-                        SetVisibleAtPosition(root.x + 1, root.y, x, z, radius);
-                        SetVisibleAtPosition(root.x, root.y + 1, x, z, radius);
+                        SetVisibleAtPosition(root.x - 1, root.y, x, z, radiusSq);
+                        SetVisibleAtPosition(root.x, root.y - 1, x, z, radiusSq);
+                        SetVisibleAtPosition(root.x + 1, root.y, x, z, radiusSq);
+                        SetVisibleAtPosition(root.x, root.y + 1, x, z, radiusSq);
                     }
                    
                 }
@@ -213,8 +213,8 @@ namespace ASL.FogOfWar
         /// <param name="pos"></param>
         /// <param name="centX"></param>
         /// <param name="centZ"></param>
-        /// <param name="radius"></param>
-        private void RayCast(FOWMapPos pos, int centX, int centZ, float radius)
+        /// <param name="radiusSq"></param>
+        private void RayCast(FOWMapPos pos, int centX, int centZ, float radiusSq)
         {
             int x = pos.x - centX;
             int z = pos.y - centZ;
@@ -235,35 +235,35 @@ namespace ASL.FogOfWar
 
                 if (root.x - 1 >= 0 && (curAngle >= 90 || curAngle < -90))
                 {
-                    SetInvisibleAtPosition(root.x - 1, root.y, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x - 1, root.y, centX, centZ, radiusSq);
                 }
                 if (root.x - 1 >= 0 && root.y - 1 >= 0 && curAngle <= -90 && curAngle >= -180)
                 {
-                    SetInvisibleAtPosition(root.x - 1, root.y - 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x - 1, root.y - 1, centX, centZ, radiusSq);
                 }
                 if (root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -180)
                 {
-                    SetInvisibleAtPosition(root.x, root.y - 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x, root.y - 1, centX, centZ, radiusSq);
                 }
                 if (root.x + 1 < m_TexWidth && root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -90)
                 {
-                    SetInvisibleAtPosition(root.x + 1, root.y - 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x + 1, root.y - 1, centX, centZ, radiusSq);
                 }
                 if (root.x + 1 < m_TexWidth && curAngle >= -90 && curAngle <= 90)
                 {
-                    SetInvisibleAtPosition(root.x + 1, root.y, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x + 1, root.y, centX, centZ, radiusSq);
                 }
                 if (root.x + 1 < m_TexWidth && root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 90)
                 {
-                    SetInvisibleAtPosition(root.x + 1, root.y + 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x + 1, root.y + 1, centX, centZ, radiusSq);
                 }
                 if (root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 180)
                 {
-                    SetInvisibleAtPosition(root.x, root.y + 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x, root.y + 1, centX, centZ, radiusSq);
                 }
                 if (root.x - 1 >= 0 && root.y + 1 < m_TexHdight && curAngle >= 90 && curAngle <= 180)
                 {
-                    SetInvisibleAtPosition(root.x - 1, root.y + 1, centX, centZ, radius);
+                    SetInvisibleAtPosition(root.x - 1, root.y + 1, centX, centZ, radiusSq);
                 }
             }
         }
@@ -275,13 +275,13 @@ namespace ASL.FogOfWar
         /// <param name="z"></param>
         /// <param name="centX"></param>
         /// <param name="centZ"></param>
-        /// <param name="radius"></param>
-        private void SetVisibleAtPosition(int x, int z, int centX, int centZ, float radius)
+        /// <param name="radiusSq"></param>
+        private void SetVisibleAtPosition(int x, int z, int centX, int centZ, float radiusSq)
         {
             if (x < 0 || z < 0 || x >= m_TexWidth || z >= m_TexHdight)
                 return;
-            float r = Mathf.Sqrt((x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ);
-            if (r > radius)
+            float r = (x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ;
+            if (r > radiusSq)
                 return;
             int index = z * m_TexWidth + x;
             if (m_Arrives.Contains(index))
@@ -298,12 +298,12 @@ namespace ASL.FogOfWar
         /// <param name="z"></param>
         /// <param name="centX"></param>
         /// <param name="centZ"></param>
-        /// <param name="radius"></param>
-        private void SetInvisibleAtPosition(int x, int z, int centX, int centZ, float radius)
+        /// <param name="radiusSq"></param>
+        private void SetInvisibleAtPosition(int x, int z, int centX, int centZ, float radiusSq)
         {
             int index = z * m_TexWidth + x;
-            float r = Mathf.Sqrt((x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ);
-            if (r > radius)
+            float r = (x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ;
+            if (r > radiusSq)
                 return;
             if (m_Arrives.Contains(index) == false)
             {

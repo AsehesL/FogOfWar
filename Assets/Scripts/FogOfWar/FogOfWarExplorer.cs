@@ -7,6 +7,7 @@ using UnityEngine;
 /// </summary>
 public class FOWFieldData
 {
+    public float radiusSquare;
     public Vector3 position;
     public float radius;
 
@@ -14,6 +15,7 @@ public class FOWFieldData
     {
         this.position = position;
         this.radius = radius;
+        this.radiusSquare = radius*radius;
     }
 }
 
