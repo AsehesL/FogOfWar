@@ -13,6 +13,18 @@ namespace ASL.FogOfWar
         /// <summary>
         /// 地图数据（1表示障碍物）
         /// </summary>
+        public byte[,] mapData { get { return m_MapData; } }
+
+        public FOWMaskTexture maskTexture { get { return m_MaskTexture; } }
+
+        public Vector3 beginPosition { get { return m_BeginPosition; } }
+
+        public float deltaX { get { return m_DeltaX; } }
+
+        public float deltaZ { get { return m_DeltaZ; } }
+        public int texWidth { get { return m_TexWidth; } }
+        public int texHeight { get { return m_TexHdight; } }
+        
         private byte[,] m_MapData;
 
         /// <summary>
@@ -20,11 +32,10 @@ namespace ASL.FogOfWar
         /// </summary>
         private FOWMaskTexture m_MaskTexture;
 
-        private Queue<FOWMapPos> m_Queue = new Queue<FOWMapPos>();
-        private Queue<FOWMapPos> m_RayCastQueue = new Queue<FOWMapPos>();
+        
         private List<int> m_Arrives = new List<int>();
 
-        private float[] m_SortAngle = new float[4];
+        //private float[] m_SortAngle = new float[4];
 
         /// <summary>
         /// 在线程池中计算FOV
@@ -37,6 +48,11 @@ namespace ASL.FogOfWar
         private float m_DeltaZ;
         private int m_TexWidth;
         private int m_TexHdight;
+
+        /// <summary>
+        /// FOV计算器
+        /// </summary>
+        private MaskCalcluatorBase m_CalculaterBase;
 
         private object m_Lock;
 
@@ -52,6 +68,8 @@ namespace ASL.FogOfWar
             m_BeginPosition = begionPosition;
             m_TexWidth = texWidth;
             m_TexHdight = texHeight;
+
+            m_CalculaterBase = new FOVAngle();
 
             GenerateMapData(heightRange);
 
@@ -136,15 +154,17 @@ namespace ASL.FogOfWar
                     m_MaskTexture.Release();
                 m_MaskTexture = null;
                 m_MapData = null;
-                m_SortAngle = null;
-                if (m_Queue != null)
-                    m_Queue.Clear();
-                if (m_RayCastQueue != null)
-                    m_RayCastQueue.Clear();
+                m_CalculaterBase.Release();
+                m_CalculaterBase = null;
+                //m_SortAngle = null;
+                //if (m_Queue != null)
+                //    m_Queue.Clear();
+                //if (m_RayCastQueue != null)
+                //    m_RayCastQueue.Clear();
                 if (m_Arrives != null)
                     m_Arrives.Clear();
-                m_Queue = null;
-                m_RayCastQueue = null;
+                //m_Queue = null;
+                //m_RayCastQueue = null;
                 m_Arrives = null;
                 m_FOVCalculator = null;
             }
@@ -166,41 +186,7 @@ namespace ASL.FogOfWar
                 {
                     if (dt[i] == null)
                         continue;
-                    Vector3 worldPosition = dt[i].position;
-                    float radiusSq = dt[i].radiusSquare;
-
-                    int x = Mathf.FloorToInt((worldPosition.x - m_BeginPosition.x)/m_DeltaX);
-                    int z = Mathf.FloorToInt((worldPosition.z - m_BeginPosition.z)/m_DeltaZ);
-
-                    if (x < 0 || x >= m_TexWidth)
-                        continue;
-                    if (z < 0 || z >= m_TexHdight)
-                        continue;
-                    if (m_MapData[x, z] != 0)
-                    {
-                        continue;
-                    }
-                    m_Queue.Clear();
-                    m_Arrives.Clear();
-
-                    m_Queue.Enqueue(new FOWMapPos(x, z));
-                    m_Arrives.Add(z*m_TexWidth + x);
-                    m_MaskTexture.SetAsVisible(x, z);
-
-                    while (m_Queue.Count > 0)
-                    {
-                        var root = m_Queue.Dequeue();
-                        if (m_MapData[root.x, root.y] != 0)
-                        {
-                            RayCast(root, x, z, radiusSq);
-                            continue;
-                        }
-                        SetVisibleAtPosition(root.x - 1, root.y, x, z, radiusSq);
-                        SetVisibleAtPosition(root.x, root.y - 1, x, z, radiusSq);
-                        SetVisibleAtPosition(root.x + 1, root.y, x, z, radiusSq);
-                        SetVisibleAtPosition(root.x, root.y + 1, x, z, radiusSq);
-                    }
-                   
+                    m_CalculaterBase.CalculateFOV(m_Arrives, dt[i], this);
                 }
                 m_MaskTexture.MarkAsUpdated();
             }
@@ -214,81 +200,145 @@ namespace ASL.FogOfWar
         /// <param name="centX"></param>
         /// <param name="centZ"></param>
         /// <param name="radiusSq"></param>
-        private void RayCast(FOWMapPos pos, int centX, int centZ, float radiusSq)
+        private void RayCast(FOWMapPos pos, int centX, int centZ, float radius)
         {
-            int x = pos.x - centX;
-            int z = pos.y - centZ;
-            m_SortAngle[0] = Mathf.Atan2((z* m_DeltaZ + m_DeltaZ / 2), (x* m_DeltaX - m_DeltaX / 2))*Mathf.Rad2Deg;
-            m_SortAngle[1] = Mathf.Atan2((z* m_DeltaZ - m_DeltaZ / 2), (x* m_DeltaX - m_DeltaX / 2))*Mathf.Rad2Deg;
-            m_SortAngle[2] = Mathf.Atan2((z* m_DeltaZ + m_DeltaZ / 2), (x* m_DeltaX + m_DeltaX / 2))*Mathf.Rad2Deg;
-            m_SortAngle[3] = Mathf.Atan2((z* m_DeltaZ - m_DeltaZ / 2), (x* m_DeltaX + m_DeltaX / 2))*Mathf.Rad2Deg;
-            float curAngle = Mathf.Atan2((z* m_DeltaZ), (x* m_DeltaX))*Mathf.Rad2Deg;
-            SortAngle();
+            Vector2 dir = new Vector2(pos.x - centX, pos.y - centZ);
+            float l = dir.magnitude;
+            if (radius - l <= 0)
+                return;
+            dir = dir.normalized*(radius - l);
+            int x = pos.x + (int)dir.x;
+            int y = pos.y + (int)dir.y;
 
-            m_RayCastQueue.Clear();
-            m_RayCastQueue.Enqueue(pos);
-            int index = pos.y*m_TexWidth + pos.x;
-            m_Arrives.Add(index);
-            while (m_RayCastQueue.Count > 0)
-            {
-                FOWMapPos root = m_RayCastQueue.Dequeue();
+            SetInvisibleLine(pos.x, pos.y, x, y);
 
-                if (root.x - 1 >= 0 && (curAngle >= 90 || curAngle < -90))
-                {
-                    SetInvisibleAtPosition(root.x - 1, root.y, centX, centZ, radiusSq);
-                }
-                if (root.x - 1 >= 0 && root.y - 1 >= 0 && curAngle <= -90 && curAngle >= -180)
-                {
-                    SetInvisibleAtPosition(root.x - 1, root.y - 1, centX, centZ, radiusSq);
-                }
-                if (root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -180)
-                {
-                    SetInvisibleAtPosition(root.x, root.y - 1, centX, centZ, radiusSq);
-                }
-                if (root.x + 1 < m_TexWidth && root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -90)
-                {
-                    SetInvisibleAtPosition(root.x + 1, root.y - 1, centX, centZ, radiusSq);
-                }
-                if (root.x + 1 < m_TexWidth && curAngle >= -90 && curAngle <= 90)
-                {
-                    SetInvisibleAtPosition(root.x + 1, root.y, centX, centZ, radiusSq);
-                }
-                if (root.x + 1 < m_TexWidth && root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 90)
-                {
-                    SetInvisibleAtPosition(root.x + 1, root.y + 1, centX, centZ, radiusSq);
-                }
-                if (root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 180)
-                {
-                    SetInvisibleAtPosition(root.x, root.y + 1, centX, centZ, radiusSq);
-                }
-                if (root.x - 1 >= 0 && root.y + 1 < m_TexHdight && curAngle >= 90 && curAngle <= 180)
-                {
-                    SetInvisibleAtPosition(root.x - 1, root.y + 1, centX, centZ, radiusSq);
-                }
-            }
+            //int x = pos.x - centX;
+            //int z = pos.y - centZ;
+            //m_SortAngle[0] = Mathf.Atan2((z* m_DeltaZ + m_DeltaZ / 2), (x* m_DeltaX - m_DeltaX / 2))*Mathf.Rad2Deg;
+            //m_SortAngle[1] = Mathf.Atan2((z* m_DeltaZ - m_DeltaZ / 2), (x* m_DeltaX - m_DeltaX / 2))*Mathf.Rad2Deg;
+            //m_SortAngle[2] = Mathf.Atan2((z* m_DeltaZ + m_DeltaZ / 2), (x* m_DeltaX + m_DeltaX / 2))*Mathf.Rad2Deg;
+            //m_SortAngle[3] = Mathf.Atan2((z* m_DeltaZ - m_DeltaZ / 2), (x* m_DeltaX + m_DeltaX / 2))*Mathf.Rad2Deg;
+            //float curAngle = Mathf.Atan2((z* m_DeltaZ), (x* m_DeltaX))*Mathf.Rad2Deg;
+            //SortAngle();
+
+            //m_RayCastQueue.Clear();
+            //m_RayCastQueue.Enqueue(pos);
+            //int index = pos.y*m_TexWidth + pos.x;
+            //m_Arrives.Add(index);
+            //while (m_RayCastQueue.Count > 0)
+            //{
+            //    FOWMapPos root = m_RayCastQueue.Dequeue();
+
+            //    if (root.x - 1 >= 0 && (curAngle >= 90 || curAngle < -90))
+            //    {
+            //        SetInvisibleAtPosition(root.x - 1, root.y, centX, centZ, radiusSq);
+            //    }
+            //    if (root.x - 1 >= 0 && root.y - 1 >= 0 && curAngle <= -90 && curAngle >= -180)
+            //    {
+            //        SetInvisibleAtPosition(root.x - 1, root.y - 1, centX, centZ, radiusSq);
+            //    }
+            //    if (root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -180)
+            //    {
+            //        SetInvisibleAtPosition(root.x, root.y - 1, centX, centZ, radiusSq);
+            //    }
+            //    if (root.x + 1 < m_TexWidth && root.y - 1 >= 0 && curAngle <= 0 && curAngle >= -90)
+            //    {
+            //        SetInvisibleAtPosition(root.x + 1, root.y - 1, centX, centZ, radiusSq);
+            //    }
+            //    if (root.x + 1 < m_TexWidth && curAngle >= -90 && curAngle <= 90)
+            //    {
+            //        SetInvisibleAtPosition(root.x + 1, root.y, centX, centZ, radiusSq);
+            //    }
+            //    if (root.x + 1 < m_TexWidth && root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 90)
+            //    {
+            //        SetInvisibleAtPosition(root.x + 1, root.y + 1, centX, centZ, radiusSq);
+            //    }
+            //    if (root.y + 1 < m_TexHdight && curAngle >= 0 && curAngle <= 180)
+            //    {
+            //        SetInvisibleAtPosition(root.x, root.y + 1, centX, centZ, radiusSq);
+            //    }
+            //    if (root.x - 1 >= 0 && root.y + 1 < m_TexHdight && curAngle >= 90 && curAngle <= 180)
+            //    {
+            //        SetInvisibleAtPosition(root.x - 1, root.y + 1, centX, centZ, radiusSq);
+            //    }
+            //}
         }
 
-        /// <summary>
-        /// 将指定坐标点设置为可见
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="z"></param>
-        /// <param name="centX"></param>
-        /// <param name="centZ"></param>
-        /// <param name="radiusSq"></param>
-        private void SetVisibleAtPosition(int x, int z, int centX, int centZ, float radiusSq)
+        
+
+        private void SetInvisibleLine(int beginx, int beginy, int endx, int endy)
         {
-            if (x < 0 || z < 0 || x >= m_TexWidth || z >= m_TexHdight)
-                return;
-            float r = (x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ;
-            if (r > radiusSq)
-                return;
+            int dx = Mathf.Abs(endx - beginx);
+            int dy = Mathf.Abs(endy - beginy);
+            //int x, y;
+            int step = ((endy < beginy && endx >= beginx) || (endy >= beginy && endx < beginx)) ? -1 : 1;
+            int p, twod, twodm;
+            int pv1, pv2, to;
+            if (dy < dx)
+            {
+                p = 2 * dy - dx;
+                twod = 2 * dy;
+                twodm = 2 * (dy - dx);
+                if (beginx > endx)
+                {
+                    pv1 = endx;
+                    pv2 = endy;
+                    endx = beginx;
+                }
+                else
+                {
+                    pv1 = beginx;
+                    pv2 = beginy;
+                }
+                to = endx;
+            }
+            else
+            {
+                p = 2 * dx - dy;
+                twod = 2 * dx;
+                twodm = 2 * (dx - dy);
+                if (beginy > endy)
+                {
+                    pv2 = endx;
+                    pv1 = endy;
+                    endy = beginy;
+                }
+                else
+                {
+                    pv2 = beginx;
+                    pv1 = beginy;
+                }
+                to = endy;
+            }
+            if (dy < dx)
+                SetInvisibleAtPosition(pv1, pv2);
+            else
+                SetInvisibleAtPosition(pv2, pv1);
+            while (pv1 < to)
+            {
+                pv1++;
+                if (p < 0)
+                    p += twod;
+                else
+                {
+                    pv2 += step;
+                    p += twodm;
+                }
+                if (dy < dx)
+                    SetInvisibleAtPosition(pv1, pv2);
+                else
+                    SetInvisibleAtPosition(pv2, pv1);
+            }
+
+        }
+
+        private void SetInvisibleAtPosition(int x, int z)
+        {
             int index = z * m_TexWidth + x;
-            if (m_Arrives.Contains(index))
-                return;
-            m_Arrives.Add(index);
-            m_Queue.Enqueue(new FOWMapPos(x, z));
-            m_MaskTexture.SetAsVisible(x, z);
+            if (m_Arrives.Contains(index) == false)
+            {
+                m_Arrives.Add(index);
+            }
         }
 
         /// <summary>
@@ -299,59 +349,59 @@ namespace ASL.FogOfWar
         /// <param name="centX"></param>
         /// <param name="centZ"></param>
         /// <param name="radiusSq"></param>
-        private void SetInvisibleAtPosition(int x, int z, int centX, int centZ, float radiusSq)
-        {
-            int index = z * m_TexWidth + x;
-            float r = (x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ;
-            if (r > radiusSq)
-                return;
-            if (m_Arrives.Contains(index) == false)
-            {
-                if (IsPositionInvisible(x - centX, z - centZ))
-                {
-                    m_RayCastQueue.Enqueue(new FOWMapPos(x, z));
-                    m_Arrives.Add(index);
-                }
-            }
-        }
+        //private void SetInvisibleAtPosition(int x, int z, int centX, int centZ, float radiusSq)
+        //{
+        //    int index = z * m_TexWidth + x;
+        //    float r = (x - centX) * (x - centX) * m_DeltaX * m_DeltaX + (z - centZ) * (z - centZ) * m_DeltaZ * m_DeltaZ;
+        //    if (r > radiusSq)
+        //        return;
+        //    if (m_Arrives.Contains(index) == false)
+        //    {
+        //        if (IsPositionInvisible(x - centX, z - centZ))
+        //        {
+        //            m_RayCastQueue.Enqueue(new FOWMapPos(x, z));
+        //            m_Arrives.Add(index);
+        //        }
+        //    }
+        //}
 
-        private bool IsPositionInvisible(int x, int y)
-        {
-            float angle = Mathf.Atan2((y * m_DeltaZ), (x * m_DeltaX)) * Mathf.Rad2Deg;
-            //if (angle < 0) angle += 360;
-            bool isEnd = (m_SortAngle[0] - m_SortAngle[3]) >= 180;
-            float minAngle = isEnd ? m_SortAngle[1] : m_SortAngle[3];
-            float maxAngle = isEnd ? m_SortAngle[2] : m_SortAngle[0];
-            if (isEnd)
-            {
-                if (angle >= minAngle && angle <= 180)
-                    return true;
-                if (angle <= maxAngle && angle >= -180)
-                    return true;
-                return false;
-            }
-            if (angle >= minAngle && angle <= maxAngle)
-            {
-                return true;
-            }
-            return false;
-        }
+        //private bool IsPositionInvisible(int x, int y)
+        //{
+        //    float angle = Mathf.Atan2((y * m_DeltaZ), (x * m_DeltaX)) * Mathf.Rad2Deg;
+        //    //if (angle < 0) angle += 360;
+        //    bool isEnd = (m_SortAngle[0] - m_SortAngle[3]) >= 180;
+        //    float minAngle = isEnd ? m_SortAngle[1] : m_SortAngle[3];
+        //    float maxAngle = isEnd ? m_SortAngle[2] : m_SortAngle[0];
+        //    if (isEnd)
+        //    {
+        //        if (angle >= minAngle && angle <= 180)
+        //            return true;
+        //        if (angle <= maxAngle && angle >= -180)
+        //            return true;
+        //        return false;
+        //    }
+        //    if (angle >= minAngle && angle <= maxAngle)
+        //    {
+        //        return true;
+        //    }
+        //    return false;
+        //}
 
-        private void SortAngle()
-        {
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = i + 1; j < 4; j++)
-                {
-                    if (m_SortAngle[i] < m_SortAngle[j])
-                    {
-                        float tmp = m_SortAngle[i];
-                        m_SortAngle[i] = m_SortAngle[j];
-                        m_SortAngle[j] = tmp;
-                    }
-                }
-            }
-        }
+        //private void SortAngle()
+        //{
+        //    for (int i = 0; i < 4; i++)
+        //    {
+        //        for (int j = i + 1; j < 4; j++)
+        //        {
+        //            if (m_SortAngle[i] < m_SortAngle[j])
+        //            {
+        //                float tmp = m_SortAngle[i];
+        //                m_SortAngle[i] = m_SortAngle[j];
+        //                m_SortAngle[j] = tmp;
+        //            }
+        //        }
+        //    }
+        //}
 
     }
 
