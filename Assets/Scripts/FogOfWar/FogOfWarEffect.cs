@@ -20,6 +20,22 @@ public struct FOWMapPos
 /// </summary>
 public class FogOfWarEffect : MonoBehaviour {
 
+    public enum FogMaskType
+    {
+        /// <summary>
+        /// 精确计算的FOV
+        /// </summary>
+        AccurateFOV,
+        /// <summary>
+        /// 基础FOV
+        /// </summary>
+        BasicFOV,
+        /// <summary>
+        /// 简单原形
+        /// </summary>
+        Circular,
+    }
+
     public static FogOfWarEffect Instance
     {
         get
@@ -32,6 +48,10 @@ public class FogOfWarEffect : MonoBehaviour {
 
     private static FogOfWarEffect instance;
 
+    /// <summary>
+    /// 迷雾蒙版类型
+    /// </summary>
+    public FogMaskType fogMaskType { get { return m_FogMaskType; } }
     /// <summary>
     /// 战争迷雾颜色(RGB迷雾颜色，Alpha已探索区域透明度)
     /// </summary>
@@ -67,6 +87,8 @@ public class FogOfWarEffect : MonoBehaviour {
         }
     }
 
+    [SerializeField]
+    private FogMaskType m_FogMaskType;
     [SerializeField]
     private Color m_FogColor = Color.black;
     [SerializeField]
@@ -194,7 +216,7 @@ public class FogOfWarEffect : MonoBehaviour {
         m_DeltaZ = m_ZSize / m_TexHeight;
         m_BeginPos = m_CenterPosition - new Vector3(m_XSize / 2, 0, m_ZSize / 2);
         m_Renderer = new FOWRenderer(effectShader, blurShader, m_CenterPosition, m_XSize, m_ZSize, m_FogColor, m_BlurOffset, m_BlurInteration);
-        m_Map = new FOWMap(m_BeginPos, m_XSize, m_ZSize, m_TexWidth, m_TexHeight, m_HeightRange);
+        m_Map = new FOWMap(m_FogMaskType, m_BeginPos, m_XSize, m_ZSize, m_TexWidth, m_TexHeight, m_HeightRange);
         return true;
     }
 

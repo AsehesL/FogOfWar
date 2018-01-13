@@ -10,7 +10,7 @@ namespace ASL.FogOfWar
     internal abstract class MaskCalcluatorBase
     {
 
-        public abstract void CalculateFOV(List<int> arrives, FOWFieldData field, FOWMap map);
+        public abstract void Calculate(FOWFieldData field, FOWMap map);
 
         public abstract void Release();
     }
