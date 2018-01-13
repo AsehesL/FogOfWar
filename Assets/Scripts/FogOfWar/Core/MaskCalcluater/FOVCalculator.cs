@@ -47,7 +47,15 @@ namespace ASL.FogOfWar
                 var root = m_Queue.Dequeue();
                 if (map.mapData[root.x, root.y] != 0)
                 {
-                    RayCast(map, root, x, z, field);
+                    if (PreRayCast(map, root, x, z))
+                    {
+                        int index = root.y*map.texWidth + root.x;
+                        if (!m_Arrives.Contains(index))
+                            m_Arrives.Add(index);
+                        map.maskTexture.SetAsVisible(root.x, root.y);
+                    }
+                    else
+                        RayCast(map, root, x, z, field);
                     continue;
                 }
                 SetVisibleAtPosition(map, root.x - 1, root.y, x, z, radiusSq);
@@ -63,6 +71,34 @@ namespace ASL.FogOfWar
             m_Queue = null;
             m_Arrives.Clear();
             m_Arrives = null;
+        }
+
+        private bool PreRayCast(FOWMap map, FOWMapPos pos, int centX, int centZ)
+        {
+            float k = ((float) (pos.y - centZ))/(pos.x - centX);
+            if (k < -0.414f && k >= -2.414f)
+            {
+                return !IsVisible(map, pos.x + 1, pos.y + 1) && !IsVisible(map, pos.x - 1, pos.y - 1);
+            }else if (k < -2.414f || k >= 2.414f)
+            {
+                return !IsVisible(map, pos.x + 1, pos.y) && !IsVisible(map, pos.x - 1, pos.y);
+            }else if (k < 2.414f && k >= 0.414f)
+            {
+                return !IsVisible(map, pos.x + 1, pos.y - 1) && !IsVisible(map, pos.x - 1, pos.y + 1);
+            }
+            else
+            {
+                return !IsVisible(map, pos.x, pos.y + 1) && !IsVisible(map, pos.x, pos.y - 1);
+            }
+        }
+
+        private bool IsVisible(FOWMap map, int x, int y)
+        {
+            if (x < 0 || x >= map.texWidth)
+                return false;
+            if (y < 0 || y >= map.texHeight)
+                return false;
+            return map.mapData[x, y] == 0;
         }
 
         protected abstract void RayCast(FOWMap map, FOWMapPos pos, int centX, int centZ,
