@@ -186,6 +186,8 @@ namespace ASL.FogOfWar
             {
                 case FogOfWarEffect.FogMaskType.AccurateFOV:
                     return new FOVAccurate();
+                case FogOfWarEffect.FogMaskType.AccurateFOV2:
+                    return new FOVAccurate2();
                 case FogOfWarEffect.FogMaskType.BasicFOV:
                     return new FOVSimple();
                 case FogOfWarEffect.FogMaskType.Circular:
