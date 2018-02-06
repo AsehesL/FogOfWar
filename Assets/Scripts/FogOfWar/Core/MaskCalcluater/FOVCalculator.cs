@@ -19,7 +19,7 @@ namespace ASL.FogOfWar
             m_Arrives = new List<int>();
         }
 
-        public sealed override void Calculate(FOWFieldData field, FOWMap map)
+        protected sealed override void RealtimeCalculate(FOWFieldData field, FOWMap map)
         {
             Vector3 worldPosition = field.position;
             float radiusSq = field.radiusSquare;

@@ -13,7 +13,7 @@ namespace ASL.FogOfWar
         /// <summary>
         /// 地图数据（1表示障碍物）
         /// </summary>
-        public byte[,] mapData { get { return m_MapData; } }
+        public IFOWMapData mapData { get { return m_MapData; } }
 
         public FOWMaskTexture maskTexture { get { return m_MaskTexture; } }
 
@@ -25,7 +25,7 @@ namespace ASL.FogOfWar
         public int texWidth { get { return m_TexWidth; } }
         public int texHeight { get { return m_TexHdight; } }
         
-        private byte[,] m_MapData;
+        private IFOWMapData m_MapData;
 
         /// <summary>
         /// 迷雾纹理
@@ -57,7 +57,7 @@ namespace ASL.FogOfWar
         {
             m_FOVCalculator = new WaitCallback(this.CalculateFOV);
 
-            m_MapData = new byte[texWidth, texHeight];
+            m_MapData = new FOWMapData(texWidth, texHeight);//new byte[texWidth, texHeight];
             m_MaskTexture = new FOWMaskTexture(texWidth, texHeight);
 
             m_DeltaX = xSize / texWidth;
@@ -79,23 +79,7 @@ namespace ASL.FogOfWar
         /// <param name="heightRange">高度范围</param>
         private void GenerateMapData(float heightRange)
         {
-            for (int i = 0; i < m_TexWidth; i++)
-            {
-                for (int j = 0; j < m_TexHdight; j++)
-                {
-                    float x = m_BeginPosition.x + i * m_DeltaX + m_DeltaX / 2;
-                    float y = m_BeginPosition.y + j * m_DeltaZ + m_DeltaZ / 2;
-                    Ray ray = new Ray(new Vector3(x, m_BeginPosition.y + heightRange, y), Vector3.down);
-                    if (Physics.Raycast(ray, heightRange))
-                    {
-                        m_MapData[i, j] = 1;
-                    }
-                    else
-                    {
-                        m_MapData[i, j] = 0;
-                    }
-                }
-            }
+            m_MapData.GenerateMapData(beginPosition.x, beginPosition.y, m_DeltaX, m_DeltaZ, heightRange);
         }
 
         /// <summary>

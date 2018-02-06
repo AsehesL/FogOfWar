@@ -35,7 +35,7 @@ public class FogOfWarEffect : MonoBehaviour {
         /// </summary>
         BasicFOV,
         /// <summary>
-        /// 简单原形
+        /// 简单圆形
         /// </summary>
         Circular,
     }
@@ -126,6 +126,11 @@ public class FogOfWarEffect : MonoBehaviour {
     /// 模糊shader
     /// </summary>
     public Shader blurShader;
+
+    /// <summary>
+    /// 预生成的地图FOV数据（如果为空则使用实时计算FOV）
+    /// </summary>
+    //public FOWPregenerationFOVMapData pregenerationFOVMapData;
 
     /// <summary>
     /// 战争迷雾地图对象

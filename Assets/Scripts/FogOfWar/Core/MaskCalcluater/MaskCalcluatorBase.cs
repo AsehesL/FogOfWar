@@ -10,7 +10,19 @@ namespace ASL.FogOfWar
     internal abstract class MaskCalcluatorBase
     {
 
-        public abstract void Calculate(FOWFieldData field, FOWMap map);
+        public void Calculate(FOWFieldData field, FOWMap map)
+        {
+            if (map.mapData.IsPregeneration)
+            {
+
+            }
+            else
+            {
+                RealtimeCalculate(field, map);
+            }
+        }
+
+        protected abstract void RealtimeCalculate(FOWFieldData field, FOWMap map);
 
         public abstract void Release();
     }

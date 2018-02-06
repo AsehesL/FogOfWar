@@ -8,7 +8,7 @@ namespace ASL.FogOfWar
 {
     internal class CircularMask : MaskCalcluatorBase
     {
-        public override void Calculate(FOWFieldData field, FOWMap map)
+        protected override void RealtimeCalculate(FOWFieldData field, FOWMap map)
         {
             Vector3 worldPosition = field.position;
             int rx = (int) (field.radius/map.deltaX);
