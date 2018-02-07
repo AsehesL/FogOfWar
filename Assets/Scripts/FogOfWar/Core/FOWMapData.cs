@@ -13,7 +13,7 @@ namespace ASL.FogOfWar
 
         void GenerateMapData(float beginx, float beginy, float deltax, float deltay, float heightRange);
 
-        byte this[int i, int j] { get; }
+        bool this[int i, int j] { get; }
     }
     
     public class FOWMapData : IFOWMapData
@@ -33,7 +33,7 @@ namespace ASL.FogOfWar
             get { return m_Height; }
         }
 
-        public byte this[int i, int j]
+        public bool this[int i, int j]
         {
             get
             {
@@ -42,14 +42,14 @@ namespace ASL.FogOfWar
             }
         }
 
-        private byte[,] m_MapData;
+        private bool[,] m_MapData;
 
         private int m_Width;
         private int m_Height;
 
         public FOWMapData(int width, int height)
         {
-            m_MapData = new byte[width, height];
+            m_MapData = new bool[width, height];
             m_Width = width;
             m_Height = height;
         }
@@ -65,11 +65,11 @@ namespace ASL.FogOfWar
                     Ray ray = new Ray(new Vector3(x, beginy + heightRange, y), Vector3.down);
                     if (Physics.Raycast(ray, heightRange))
                     {
-                        m_MapData[i, j] = 1;
+                        m_MapData[i, j] = true;
                     }
                     else
                     {
-                        m_MapData[i, j] = 0;
+                        //m_MapData[i, j] = false;
                     }
                 }
             }

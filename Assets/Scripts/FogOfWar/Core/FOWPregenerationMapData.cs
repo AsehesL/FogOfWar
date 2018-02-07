@@ -12,9 +12,9 @@ namespace ASL.FogOfWar
             get { return true; }
         }
 
-        public byte this[int i, int j]
+        public bool this[int i, int j]
         {
-            get { return 0; }
+            get { return true; }
         }
 
         public void GenerateMapData(float beginx, float beginy, float deltax, float deltay, float heightRange)

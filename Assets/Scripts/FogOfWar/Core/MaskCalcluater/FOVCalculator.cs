@@ -31,7 +31,7 @@ namespace ASL.FogOfWar
                 return;
             if (z < 0 || z >= map.texHeight)
                 return;
-            if (map.mapData[x, z] != 0)
+            if (map.mapData[x, z])
             {
                 return;
             }
@@ -45,7 +45,7 @@ namespace ASL.FogOfWar
             while (m_Queue.Count > 0)
             {
                 var root = m_Queue.Dequeue();
-                if (map.mapData[root.x, root.y] != 0)
+                if (map.mapData[root.x, root.y])
                 {
                     if (PreRayCast(map, root, x, z))
                     {
@@ -98,7 +98,7 @@ namespace ASL.FogOfWar
                 return false;
             if (y < 0 || y >= map.texHeight)
                 return false;
-            return map.mapData[x, y] == 0;
+            return !map.mapData[x, y];
         }
 
         protected abstract void RayCast(FOWMap map, FOWMapPos pos, int centX, int centZ,
