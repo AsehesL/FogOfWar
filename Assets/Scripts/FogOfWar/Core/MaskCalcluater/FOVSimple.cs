@@ -8,7 +8,7 @@ namespace ASL.FogOfWar
     {
         protected override void RayCast(FOWMap map, FOWMapPos pos, int centX, int centZ, FOWFieldData field)
         {
-            float r = field.radius/map.deltaX;
+            float r = field.radius*map.invDeltaX;
             Vector2 dir = new Vector2(pos.x - centX, pos.y - centZ);
             float l = dir.magnitude;
             if (r - l <= 0)

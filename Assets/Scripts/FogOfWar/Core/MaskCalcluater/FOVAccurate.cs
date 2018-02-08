@@ -34,10 +34,10 @@ namespace ASL.FogOfWar
             int x = pos.x - centX;
             int z = pos.y - centZ;
 
-            m_SortAngle[0] = Mathf.Atan2((z * map.deltaZ + map.deltaZ / 2), (x * map.deltaX - map.deltaX / 2)) * Mathf.Rad2Deg;
-            m_SortAngle[1] = Mathf.Atan2((z * map.deltaZ - map.deltaZ / 2), (x * map.deltaX - map.deltaX / 2)) * Mathf.Rad2Deg;
-            m_SortAngle[2] = Mathf.Atan2((z * map.deltaZ + map.deltaZ / 2), (x * map.deltaX + map.deltaX / 2)) * Mathf.Rad2Deg;
-            m_SortAngle[3] = Mathf.Atan2((z * map.deltaZ - map.deltaZ / 2), (x * map.deltaX + map.deltaX / 2)) * Mathf.Rad2Deg;
+            m_SortAngle[0] = Mathf.Atan2((z * map.deltaZ + map.deltaZ * 0.5f), (x * map.deltaX - map.deltaX * 0.5f)) * Mathf.Rad2Deg;
+            m_SortAngle[1] = Mathf.Atan2((z * map.deltaZ - map.deltaZ * 0.5f), (x * map.deltaX - map.deltaX * 0.5f)) * Mathf.Rad2Deg;
+            m_SortAngle[2] = Mathf.Atan2((z * map.deltaZ + map.deltaZ * 0.5f), (x * map.deltaX + map.deltaX * 0.5f)) * Mathf.Rad2Deg;
+            m_SortAngle[3] = Mathf.Atan2((z * map.deltaZ - map.deltaZ * 0.5f), (x * map.deltaX + map.deltaX * 0.5f)) * Mathf.Rad2Deg;
             float curAngle = Mathf.Atan2((z * map.deltaZ), (x * map.deltaX)) * Mathf.Rad2Deg;
             SortAngle();
 

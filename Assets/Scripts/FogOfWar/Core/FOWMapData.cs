@@ -9,7 +9,7 @@ namespace ASL.FogOfWar
         /// <summary>
         /// 地图数据是否为预生成
         /// </summary>
-        bool IsPregeneration { get; }
+        bool isPregeneration { get; }
 
         void GenerateMapData(float beginx, float beginy, float deltax, float deltay, float heightRange);
 
@@ -18,17 +18,17 @@ namespace ASL.FogOfWar
     
     public class FOWMapData : IFOWMapData
     {
-        public bool IsPregeneration
+        public bool isPregeneration
         {
             get { return false; }
         }
 
-        public int Width
+        public int width
         {
             get { return m_Width; }
         }
 
-        public int Height
+        public int height
         {
             get { return m_Height; }
         }
@@ -60,17 +60,7 @@ namespace ASL.FogOfWar
             {
                 for (int j = 0; j < m_Height; j++)
                 {
-                    float x = beginx + i * deltax + deltax / 2;
-                    float y = beginy + j * deltay + deltay / 2;
-                    Ray ray = new Ray(new Vector3(x, beginy + heightRange, y), Vector3.down);
-                    if (Physics.Raycast(ray, heightRange))
-                    {
-                        m_MapData[i, j] = true;
-                    }
-                    else
-                    {
-                        //m_MapData[i, j] = false;
-                    }
+                    m_MapData[i, j] = FOWUtils.IsObstacle(beginx, beginy, deltax, deltay, heightRange, i, j);
                 }
             }
         }

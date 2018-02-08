@@ -37,5 +37,17 @@ namespace ASL.FogOfWar
 
             Gizmos.DrawWireCube(position+Vector3.up*heightRange/2, new Vector3(xSize, heightRange, zSize));
         }
+
+        public static bool IsObstacle(float beginx, float beginy, float deltax, float deltay, float heightRange, int x, int y)
+        {
+            float px = beginx + x*deltax + deltax*0.5f;
+            float py = beginy + y*deltay + deltay*0.5f;
+            Ray ray = new Ray(new Vector3(px, beginy + heightRange, py), Vector3.down);
+            if (Physics.Raycast(ray, heightRange))
+            {
+                return true;
+            }
+            return false;
+        }
     }
 }

@@ -81,6 +81,8 @@ public class FogOfWarEffect : MonoBehaviour {
     /// </summary>
     public Vector3 centerPosition { get { return m_CenterPosition; } }
 
+    public float heightRange { get { return m_HeightRange; } }
+
     public Texture2D fowMaskTexture
     {
         get
@@ -148,6 +150,8 @@ public class FogOfWarEffect : MonoBehaviour {
 
     private float m_DeltaX;
     private float m_DeltaZ;
+    private float m_InvDeltaX;
+    private float m_InvDeltaZ;
 
     private Camera m_Camera;
 
@@ -223,9 +227,16 @@ public class FogOfWarEffect : MonoBehaviour {
         m_Camera.depthTextureMode |= DepthTextureMode.Depth;
         m_DeltaX = m_XSize / m_TexWidth;
         m_DeltaZ = m_ZSize / m_TexHeight;
-        m_BeginPos = m_CenterPosition - new Vector3(m_XSize / 2, 0, m_ZSize / 2);
+        m_InvDeltaX = 1.0f/m_DeltaX;
+        m_InvDeltaZ = 1.0f/m_DeltaZ;
+        m_BeginPos = m_CenterPosition - new Vector3(m_XSize * 0.5f, 0, m_ZSize * 0.5f);
         m_Renderer = new FOWRenderer(effectShader, blurShader, m_CenterPosition, m_XSize, m_ZSize, m_FogColor, m_BlurOffset, m_BlurInteration);
         m_Map = new FOWMap(m_FogMaskType, m_BeginPos, m_XSize, m_ZSize, m_TexWidth, m_TexHeight, m_HeightRange);
+        IFOWMapData md = gameObject.GetComponent<IFOWMapData>();
+        if (md != null)
+            m_Map.SetMapData(md);
+        else
+            m_Map.SetMapData(new FOWMapData(m_TexHeight, m_TexHeight));
         return true;
     }
 
@@ -241,8 +252,8 @@ public class FogOfWarEffect : MonoBehaviour {
         if (!Instance.m_IsInitialized)
             return default(FOWMapPos);
 
-        int x = Mathf.FloorToInt((position.x - Instance.m_BeginPos.x) / Instance.m_DeltaX);
-        int z = Mathf.FloorToInt((position.z - Instance.m_BeginPos.z) / Instance.m_DeltaZ);
+        int x = Mathf.FloorToInt((position.x - Instance.m_BeginPos.x) * Instance.m_InvDeltaX);
+        int z = Mathf.FloorToInt((position.z - Instance.m_BeginPos.z) * Instance.m_InvDeltaZ);
 
         return new FOWMapPos(x, z);
     }
@@ -310,8 +321,8 @@ public class FogOfWarEffect : MonoBehaviour {
             return true;
         if (!Instance.m_IsInitialized)
             return true;
-        int x = Mathf.FloorToInt((position.x - Instance.m_BeginPos.x)/ Instance.m_DeltaX);
-        int z = Mathf.FloorToInt((position.z - Instance.m_BeginPos.z)/ Instance.m_DeltaZ);
+        int x = Mathf.FloorToInt((position.x - Instance.m_BeginPos.x)* Instance.m_InvDeltaX);
+        int z = Mathf.FloorToInt((position.z - Instance.m_BeginPos.z)* Instance.m_InvDeltaZ);
 
         return Instance.m_Map.IsVisibleInMap(x, z);
 

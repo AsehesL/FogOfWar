@@ -30,9 +30,9 @@ namespace ASL.FogOfWar
             Matrix4x4 worldToLocal = Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
             Matrix4x4 proj = default(Matrix4x4);
 
-            proj.m00 = 1/xSize;
+            proj.m00 = 1.0f/xSize;
             proj.m03 = -0.5f;
-            proj.m12 = 1/zSize;
+            proj.m12 = 1.0f/zSize;
             proj.m13 = -0.5f;
             proj.m33 = 1.0f;
 

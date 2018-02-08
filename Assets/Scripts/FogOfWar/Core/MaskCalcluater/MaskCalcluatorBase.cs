@@ -12,7 +12,7 @@ namespace ASL.FogOfWar
 
         public void Calculate(FOWFieldData field, FOWMap map)
         {
-            if (map.mapData.IsPregeneration)
+            if (map.mapData.isPregeneration)
             {
 
             }

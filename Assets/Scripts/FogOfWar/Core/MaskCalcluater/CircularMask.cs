@@ -11,11 +11,11 @@ namespace ASL.FogOfWar
         protected override void RealtimeCalculate(FOWFieldData field, FOWMap map)
         {
             Vector3 worldPosition = field.position;
-            int rx = (int) (field.radius/map.deltaX);
-            int rz = (int) (field.radius/map.deltaZ);
-            float rs = rx*rx;
-            int x = Mathf.FloorToInt((worldPosition.x - map.beginPosition.x) / map.deltaX);
-            int z = Mathf.FloorToInt((worldPosition.z - map.beginPosition.z) / map.deltaZ);
+            int rx = (int) (field.radius*map.invDeltaX);
+            int rz = (int) (field.radius*map.invDeltaZ);
+            int rs = rx*rx;
+            int x = Mathf.FloorToInt((worldPosition.x - map.beginPosition.x) * map.invDeltaX);
+            int z = Mathf.FloorToInt((worldPosition.z - map.beginPosition.z) * map.invDeltaZ);
 
             int beginx = Mathf.Max(0, x - rx);
             int beginy = Mathf.Max(0, z - rz);
@@ -28,7 +28,7 @@ namespace ASL.FogOfWar
                 {
                     int dx = i - x;
                     int dy = j - z;
-                    float rads = dx * dx + dy * dy;
+                    int rads = dx * dx + dy * dy;
                     if (rads <= rs)
                         map.maskTexture.SetAsVisible(i, j);
                 }

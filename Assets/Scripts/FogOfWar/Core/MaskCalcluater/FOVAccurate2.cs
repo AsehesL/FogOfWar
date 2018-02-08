@@ -79,7 +79,7 @@ namespace ASL.FogOfWar
 
         private void RaycastLine(FOWMap map, FOWMapPos pos, int centX, int centZ, float px, float pz, FOWFieldData field)
         {
-            float r = field.radius * 2f / map.deltaX;
+            float r = field.radius * 2f * map.invDeltaX;
             Vector2 dir = new Vector2(px, pz);
             float l = dir.magnitude;
             if (r - l <= 0)

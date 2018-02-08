@@ -22,6 +22,10 @@ namespace ASL.FogOfWar
         public float deltaX { get { return m_DeltaX; } }
 
         public float deltaZ { get { return m_DeltaZ; } }
+
+        public float invDeltaX { get { return m_InvDeltaX; } }
+
+        public float invDeltaZ { get { return m_InvDeltaZ; } }
         public int texWidth { get { return m_TexWidth; } }
         public int texHeight { get { return m_TexHdight; } }
         
@@ -43,6 +47,8 @@ namespace ASL.FogOfWar
         
         private float m_DeltaX;
         private float m_DeltaZ;
+        private float m_InvDeltaX;
+        private float m_InvDeltaZ;
         private int m_TexWidth;
         private int m_TexHdight;
 
@@ -57,27 +63,35 @@ namespace ASL.FogOfWar
         {
             m_FOVCalculator = new WaitCallback(this.CalculateFOV);
 
-            m_MapData = new FOWMapData(texWidth, texHeight);//new byte[texWidth, texHeight];
+            //m_MapData = new FOWMapData(texWidth, texHeight);//new byte[texWidth, texHeight];
             m_MaskTexture = new FOWMaskTexture(texWidth, texHeight);
 
             m_DeltaX = xSize / texWidth;
             m_DeltaZ = zSize / texHeight;
+            m_InvDeltaX = 1.0f/m_DeltaX;
+            m_InvDeltaZ = 1.0f/m_DeltaZ;
             m_BeginPosition = begionPosition;
             m_TexWidth = texWidth;
             m_TexHdight = texHeight;
 
             m_CalculaterBase = CreateCalculator(fogMaskType);
 
-            GenerateMapData(heightRange);
+            //GenerateMapData(heightRange);
 
             m_Lock = new object();
+        }
+
+        public void SetMapData(IFOWMapData mapData)
+        {
+            Debug.Log(mapData.GetType());
+            this.m_MapData = mapData;
         }
 
         /// <summary>
         /// 生成地图数据
         /// </summary>
         /// <param name="heightRange">高度范围</param>
-        private void GenerateMapData(float heightRange)
+        public void GenerateMapData(float heightRange)
         {
             m_MapData.GenerateMapData(beginPosition.x, beginPosition.y, m_DeltaX, m_DeltaZ, heightRange);
         }

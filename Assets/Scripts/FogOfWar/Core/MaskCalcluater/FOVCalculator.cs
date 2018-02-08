@@ -24,8 +24,8 @@ namespace ASL.FogOfWar
             Vector3 worldPosition = field.position;
             float radiusSq = field.radiusSquare;
 
-            int x = Mathf.FloorToInt((worldPosition.x - map.beginPosition.x) / map.deltaX);
-            int z = Mathf.FloorToInt((worldPosition.z - map.beginPosition.z) / map.deltaZ);
+            int x = Mathf.FloorToInt((worldPosition.x - map.beginPosition.x) * map.invDeltaX);
+            int z = Mathf.FloorToInt((worldPosition.z - map.beginPosition.z) * map.invDeltaZ);
 
             if (x < 0 || x >= map.texWidth)
                 return;
