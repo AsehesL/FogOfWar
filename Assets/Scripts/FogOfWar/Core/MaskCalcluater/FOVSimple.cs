@@ -17,7 +17,7 @@ namespace ASL.FogOfWar
             int x = pos.x + (int)dir.x;
             int y = pos.y + (int)dir.y;
 
-            SetInvisibleLine(map, pos.x, pos.y, x, y);
+            SetInvisibleLine(map, pos.x, pos.y, x, y, centX, centZ, field.radiusSquare);
         }
 
 

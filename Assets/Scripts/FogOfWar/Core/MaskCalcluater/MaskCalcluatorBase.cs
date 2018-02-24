@@ -14,7 +14,7 @@ namespace ASL.FogOfWar
         {
             if (map.mapData.isPregeneration)
             {
-
+                UsePregenerationDataCalculate(field, map);
             }
             else
             {
@@ -22,7 +22,22 @@ namespace ASL.FogOfWar
             }
         }
 
+        /// <summary>
+        /// 实时计算
+        /// </summary>
+        /// <param name="field"></param>
+        /// <param name="map"></param>
         protected abstract void RealtimeCalculate(FOWFieldData field, FOWMap map);
+
+        /// <summary>
+        /// TODO:使用预生成FOV数据计算(暂未实现)
+        /// </summary>
+        /// <param name="field"></param>
+        /// <param name="map"></param>
+        private void UsePregenerationDataCalculate(FOWFieldData field, FOWMap map)
+        {
+            
+        }
 
         public abstract void Release();
     }

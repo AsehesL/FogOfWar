@@ -27,10 +27,6 @@ public class FogOfWarEffect : MonoBehaviour {
         /// </summary>
         AccurateFOV,
         /// <summary>
-        /// 精确计算的FOV算法2
-        /// </summary>
-        AccurateFOV2,
-        /// <summary>
         /// 基础FOV
         /// </summary>
         BasicFOV,

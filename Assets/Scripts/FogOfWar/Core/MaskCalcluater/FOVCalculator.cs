@@ -108,8 +108,7 @@ namespace ASL.FogOfWar
         {
             if (x < 0 || z < 0 || x >= map.texWidth || z >= map.texHeight)
                 return;
-            float r = (x - centX) * (x - centX) * map.deltaX * map.deltaX + (z - centZ) * (z - centZ) * map.deltaZ * map.deltaZ;
-            if (r > radiusSq)
+            if (!IsInRange(map, x, z, centX, centZ, radiusSq))
                 return;
             int index = z * map.texWidth + x;
             if (m_Arrives.Contains(index))
@@ -118,8 +117,8 @@ namespace ASL.FogOfWar
             m_Queue.Enqueue(new FOWMapPos(x, z));
             map.maskTexture.SetAsVisible(x, z);
         }
-
-        protected void SetInvisibleLine(FOWMap map, int beginx, int beginy, int endx, int endy)
+        
+        protected void SetInvisibleLine(FOWMap map, int beginx, int beginy, int endx, int endy, int centX, int centZ, float rsq)
         {
             int dx = Mathf.Abs(endx - beginx);
             int dy = Mathf.Abs(endy - beginy);
@@ -127,6 +126,7 @@ namespace ASL.FogOfWar
             int step = ((endy < beginy && endx >= beginx) || (endy >= beginy && endx < beginx)) ? -1 : 1;
             int p, twod, twodm;
             int pv1, pv2, to;
+            int x, y;
             if (dy < dx)
             {
                 p = 2 * dy - dx;
@@ -164,9 +164,16 @@ namespace ASL.FogOfWar
                 to = endy;
             }
             if (dy < dx)
-                SetInvisibleAtPosition(map, pv1, pv2);
+            {
+                x = pv1;
+                y = pv2;
+            }
             else
-                SetInvisibleAtPosition(map, pv2, pv1);
+            {
+                x = pv2;
+                y = pv1;
+            }
+            SetInvisibleAtPosition(map, x, y);
             while (pv1 < to)
             {
                 pv1++;
@@ -177,12 +184,32 @@ namespace ASL.FogOfWar
                     pv2 += step;
                     p += twodm;
                 }
+
                 if (dy < dx)
-                    SetInvisibleAtPosition(map, pv1, pv2);
+                {
+                    x = pv1;
+                    y = pv2;
+                }
                 else
-                    SetInvisibleAtPosition(map, pv2, pv1);
+                {
+                    x = pv2;
+                    y = pv1;
+                }
+                if (!IsInRange(map, x, y, centX, centZ, rsq))
+                {
+                    return;
+                }
+                SetInvisibleAtPosition(map, x, y);
             }
 
+        }
+
+        private bool IsInRange(FOWMap map, int x, int z, int centX, int centZ, float radiusSq)
+        {
+            float r = (x - centX) * (x - centX) * map.deltaX * map.deltaX + (z - centZ) * (z - centZ) * map.deltaZ * map.deltaZ;
+            if (r > radiusSq)
+                return false;
+            return true;
         }
 
         private void SetInvisibleAtPosition(FOWMap map, int x, int z)
