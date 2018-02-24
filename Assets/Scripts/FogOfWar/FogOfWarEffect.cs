@@ -236,7 +236,10 @@ public class FogOfWarEffect : MonoBehaviour {
         if (md != null)
             m_Map.SetMapData(md);
         else
+        {
             m_Map.SetMapData(new FOWMapData(m_TexHeight, m_TexHeight));
+            m_Map.GenerateMapData(m_HeightRange);
+        }
         return true;
     }
 
