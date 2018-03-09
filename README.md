@@ -18,7 +18,7 @@ Unity下实现的渲染可见区域的战争迷雾
 
 5、编辑器下预览战争迷雾纹理信息：
 
-​	![2](doc/preview.jpg)
+​	![3](doc/preview.JPG)
 
 
 
