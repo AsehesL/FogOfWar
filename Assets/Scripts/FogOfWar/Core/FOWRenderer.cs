@@ -27,16 +27,14 @@ namespace ASL.FogOfWar
             m_EffectMaterial = new Material(effectShader);
             m_EffectMaterial.SetFloat("_BlurOffset", blurOffset);
             m_EffectMaterial.SetColor("_FogColor", fogColor);
-            Matrix4x4 worldToLocal = Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
-            Matrix4x4 proj = default(Matrix4x4);
 
-            proj.m00 = 1.0f/xSize;
-            proj.m03 = -0.5f;
-            proj.m12 = 1.0f/zSize;
-            proj.m13 = -0.5f;
-            proj.m33 = 1.0f;
+            m_WorldToProjector = default(Matrix4x4);
+            m_WorldToProjector.m00 = 1.0f/xSize;
+            m_WorldToProjector.m03 = 1.0f/xSize*position.x - 0.5f;
+            m_WorldToProjector.m12 = 1.0f/zSize;
+            m_WorldToProjector.m13 = 1.0f/zSize*position.z - 0.5f;
+            m_WorldToProjector.m33 = 1.0f;
 
-            m_WorldToProjector = proj*worldToLocal;
             m_EffectMaterial.SetMatrix("internal_WorldToProjector", m_WorldToProjector);
 
             if (blurShader && blurInteration > 0 && blurOffset > 0)
