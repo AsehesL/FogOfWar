@@ -30,9 +30,9 @@ namespace ASL.FogOfWar
 
             m_WorldToProjector = default(Matrix4x4);
             m_WorldToProjector.m00 = 1.0f/xSize;
-            m_WorldToProjector.m03 = 1.0f/xSize*position.x - 0.5f;
+            m_WorldToProjector.m03 = -1.0f/xSize*position.x + 0.5f;
             m_WorldToProjector.m12 = 1.0f/zSize;
-            m_WorldToProjector.m13 = 1.0f/zSize*position.z - 0.5f;
+            m_WorldToProjector.m13 = -1.0f/zSize*position.z + 0.5f;
             m_WorldToProjector.m33 = 1.0f;
 
             m_EffectMaterial.SetMatrix("internal_WorldToProjector", m_WorldToProjector);
