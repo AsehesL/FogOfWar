@@ -14,6 +14,8 @@ namespace ASL.FogOfWar
 
         private Material m_BlurMaterial;
 
+        private Material m_MiniMapMaterial;
+
         /// <summary>
         /// 世界空间到迷雾投影空间矩阵
         /// </summary>
@@ -21,8 +23,12 @@ namespace ASL.FogOfWar
 
         private int m_BlurInteration;
 
+        private bool m_GenerateMimiMapMask;
 
-        public FOWRenderer(Shader effectShader, Shader blurShader, Vector3 position, float xSize, float zSize, Color fogColor, float blurOffset, int blurInteration)
+        private RenderTexture m_MiniMapMask;
+
+
+        public FOWRenderer(Shader effectShader, Shader blurShader, Shader miniMapRenderShader, Vector3 position, float xSize, float zSize, Color fogColor, float blurOffset, int blurInteration)
         {
             m_EffectMaterial = new Material(effectShader);
             m_EffectMaterial.SetFloat("_BlurOffset", blurOffset);
@@ -41,6 +47,11 @@ namespace ASL.FogOfWar
             {
                 m_BlurMaterial = new Material(blurShader);
                 m_BlurMaterial.SetFloat("_Offset", blurOffset);
+            }
+            if (miniMapRenderShader)
+            {
+                m_MiniMapMaterial = new Material(miniMapRenderShader);
+                m_MiniMapMaterial.SetColor("_FogColor", fogColor);
             }
             m_BlurInteration = blurInteration;
         }
@@ -96,15 +107,26 @@ namespace ASL.FogOfWar
                     RenderTexture.ReleaseTemporary(rt);
                     rt = rt2;
                 }
+                if (m_MiniMapMaterial)
+                    RenderToMiniMapMask(rt);
                 m_EffectMaterial.SetTexture("_FogTex", rt);
                 CustomGraphicsBlit(src, dst, m_EffectMaterial);
                 RenderTexture.ReleaseTemporary(rt);
             }
             else
             {
+                if (m_MiniMapMaterial)
+                    RenderToMiniMapMask(fogTexture);
                 m_EffectMaterial.SetTexture("_FogTex", fogTexture);
                 CustomGraphicsBlit(src, dst, m_EffectMaterial);
             }
+           // if (m_GenerateMimiMapMask)
+            //    RenderToMiniMapMask(dst);
+        }
+
+        public RenderTexture GetMimiMapMask()
+        {
+            return m_MiniMapMask;
         }
 
         /// <summary>
@@ -114,6 +136,8 @@ namespace ASL.FogOfWar
         public void SetFogFade(float fade)
         {
             m_EffectMaterial.SetFloat("_MixValue", fade);
+            if (m_MiniMapMaterial)
+                m_MiniMapMaterial.SetFloat("_MixValue", fade);
         }
 
         public void Release()
@@ -122,8 +146,22 @@ namespace ASL.FogOfWar
                 Object.Destroy(m_EffectMaterial);
             if (m_BlurMaterial)
                 Object.Destroy(m_BlurMaterial);
+            if (m_MiniMapMask)
+                Object.Destroy(m_MiniMapMask);
+            if (m_MiniMapMaterial)
+                Object.Destroy(m_MiniMapMaterial);
+            m_MiniMapMask = null;
             m_EffectMaterial = null;
             m_BlurMaterial = null;
+        }
+
+        private void RenderToMiniMapMask(Texture from)
+        {
+            if (m_MiniMapMask == null)
+            {
+                m_MiniMapMask = new RenderTexture(512, 512, 0);
+            }
+            Graphics.Blit(from, m_MiniMapMask, m_MiniMapMaterial);
         }
 
         private static void CustomGraphicsBlit(RenderTexture source, RenderTexture dest, Material fxMaterial)

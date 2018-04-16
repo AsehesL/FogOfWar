@@ -89,6 +89,16 @@ public class FogOfWarEffect : MonoBehaviour {
         }
     }
 
+    public RenderTexture minimapMask
+    {
+        get
+        {
+            if (!m_GenerateMinimapMask)
+                return null;
+            return m_Renderer.GetMimiMapMask();
+        }
+    }
+
     [SerializeField]
     private FogMaskType m_FogMaskType;
     [SerializeField]
@@ -115,6 +125,10 @@ public class FogOfWarEffect : MonoBehaviour {
     /// </summary>
     [SerializeField]
     private int m_BlurInteration;
+    /// <summary>
+    /// 是否生成小地图蒙版
+    /// </summary>
+    private bool m_GenerateMinimapMask;
 
     /// <summary>
     /// 迷雾特效shader
@@ -124,6 +138,12 @@ public class FogOfWarEffect : MonoBehaviour {
     /// 模糊shader
     /// </summary>
     public Shader blurShader;
+    /// <summary>
+    /// 小地图蒙版渲染shader
+    /// </summary>
+    public Shader minimapRenderShader;
+
+
 
     /// <summary>
     /// 预生成的地图FOV数据（如果为空则使用实时计算FOV）
@@ -226,7 +246,7 @@ public class FogOfWarEffect : MonoBehaviour {
         m_InvDeltaX = 1.0f/m_DeltaX;
         m_InvDeltaZ = 1.0f/m_DeltaZ;
         m_BeginPos = m_CenterPosition - new Vector3(m_XSize * 0.5f, 0, m_ZSize * 0.5f);
-        m_Renderer = new FOWRenderer(effectShader, blurShader, m_CenterPosition, m_XSize, m_ZSize, m_FogColor, m_BlurOffset, m_BlurInteration);
+        m_Renderer = new FOWRenderer(effectShader, blurShader, minimapRenderShader, m_CenterPosition, m_XSize, m_ZSize, m_FogColor, m_BlurOffset, m_BlurInteration);
         m_Map = new FOWMap(m_FogMaskType, m_BeginPos, m_XSize, m_ZSize, m_TexWidth, m_TexHeight, m_HeightRange);
         IFOWMapData md = gameObject.GetComponent<IFOWMapData>();
         if (md != null)
@@ -236,6 +256,8 @@ public class FogOfWarEffect : MonoBehaviour {
             m_Map.SetMapData(new FOWMapData(m_TexHeight, m_TexHeight));
             m_Map.GenerateMapData(m_HeightRange);
         }
+        if (minimapRenderShader != null)
+            m_GenerateMinimapMask = true;
         return true;
     }
 
@@ -255,6 +277,20 @@ public class FogOfWarEffect : MonoBehaviour {
         int z = Mathf.FloorToInt((position.z - Instance.m_BeginPos.z) * Instance.m_InvDeltaZ);
 
         return new FOWMapPos(x, z);
+    }
+
+    public static Vector2 WorldPositionTo2DLocal(Vector3 position)
+    {
+        if (!Instance)
+            return default(Vector2);
+        if (!Instance.m_IsInitialized)
+            return default(Vector2);
+
+        Vector2 pos = default(Vector2);
+        pos.x = (position.x - Instance.m_BeginPos.x)/Instance.m_XSize;
+        pos.y = (position.z - Instance.m_BeginPos.z)/Instance.m_ZSize;
+
+        return pos;
     }
 
     ///// <summary>

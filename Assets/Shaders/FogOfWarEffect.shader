@@ -80,7 +80,7 @@
 
 				float2 atten = saturate((0.5 - abs(pos.xy - 0.5)) / (1 - 0.9));
 
-				fixed4 col;
+				fixed3 col;
 				col.rgb = lerp(_FogColor.rgb, fixed3(1, 1, 1), tex.r*_FogColor.a);
 
 				fixed visual = lerp(tex.b, tex.g, _MixValue);
